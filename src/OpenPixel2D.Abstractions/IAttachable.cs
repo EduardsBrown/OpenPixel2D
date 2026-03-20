@@ -4,4 +4,5 @@ public interface IAttachable
 {
     void Initialize();
     void OnStart();
+    void OnDestroy();
 }

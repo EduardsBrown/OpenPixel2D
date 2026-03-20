@@ -19,6 +19,10 @@ public abstract class RenderSystem : IRenderSystem
     {
     }
 
+    public virtual void OnDestroy()
+    {
+    }
+
     public virtual void Render()
     {
     }

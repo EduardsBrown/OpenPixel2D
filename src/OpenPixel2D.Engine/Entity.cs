@@ -14,6 +14,10 @@ public sealed class Entity : IAttachable
     {
     }
 
+    public void OnDestroy()
+    {
+    }
+
     internal void SetWorld(World world)
     {
         World = world;
