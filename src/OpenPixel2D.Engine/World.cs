@@ -74,6 +74,13 @@ public class World : IDisposable
         _entityQueue.Flush();
         _updateSystemQueue.Flush();
         _renderSystemQueue.Flush();
+
+        UpdateGroup(SystemGroup.Default);
+
+        // TODO: Update BehaviorComponents
+
+        UpdateGroup(SystemGroup.Physics);
+        UpdateGroup(SystemGroup.PostPhysics);
     }
 
     public void Render()
@@ -342,5 +349,13 @@ public class World : IDisposable
         }
 
         return systems;
+    }
+
+    private void UpdateGroup(SystemGroup group)
+    {
+        foreach (var system in _updateSystemGroups[group])
+        {
+            system.Update();
+        }
     }
 }

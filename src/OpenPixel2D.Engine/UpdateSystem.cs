@@ -20,11 +20,11 @@ public abstract class UpdateSystem : IUpdateSystem
     {
     }
 
-    public virtual void OnDestroy()
+    public virtual void Update()
     {
     }
-
-    public virtual void Update()
+    
+    public virtual void OnDestroy()
     {
     }
 
