@@ -4,127 +4,158 @@ namespace OpenPixel2D.Engine;
 
 internal sealed class ResourceQueue<T> where T : class, IAttachable
 {
-    private record AttachableRecord(T Attachable, Action<T> Callback);
-
-    private List<AttachableRecord> toAdd { get; } = [];
-    private List<AttachableRecord> toRemove { get; } = [];
-
-    public bool HasAnyToAdd()
+    private readonly struct QueueEntry
     {
-        return toAdd.Count > 0;
+        public QueueEntry(T attachable)
+        {
+            Attachable = attachable;
+        }
+
+        public T Attachable { get; }
     }
 
-    public bool HasAnyToRemove()
+    private readonly Action<T> _addCallback;
+    private readonly Action<T> _removeCallback;
+    private List<QueueEntry> _pendingAdds = [];
+    private List<QueueEntry> _pendingRemoves = [];
+    private List<QueueEntry> _processingAdds = [];
+    private List<QueueEntry> _processingRemoves = [];
+
+    public ResourceQueue(Action<T> addCallback, Action<T> removeCallback)
     {
-        return toRemove.Count > 0;
+        ArgumentNullException.ThrowIfNull(addCallback);
+        ArgumentNullException.ThrowIfNull(removeCallback);
+
+        _addCallback = addCallback;
+        _removeCallback = removeCallback;
     }
 
     public bool HasPendingAdd(T attachable)
     {
-        return Contains(toAdd, attachable);
+        return Contains(_pendingAdds, attachable);
     }
 
     public bool HasPendingRemove(T attachable)
     {
-        return Contains(toRemove, attachable);
+        return Contains(_pendingRemoves, attachable);
     }
 
-    public void QueueAdd(T attachable, Action<T> callback)
+    public void QueueAdd(T attachable)
     {
-        if (Remove(toRemove, attachable))
+        if (Remove(_pendingRemoves, attachable))
         {
             return;
         }
 
-        if (!Contains(toAdd, attachable))
+        if (!Contains(_pendingAdds, attachable))
         {
-            toAdd.Add(new AttachableRecord(attachable, callback));
+            _pendingAdds.Add(new QueueEntry(attachable));
         }
     }
 
-    public void QueueRemove(T attachable, Action<T> callback)
+    public void QueueRemove(T attachable)
     {
-        if (Remove(toAdd, attachable))
+        if (Remove(_pendingAdds, attachable))
         {
             return;
         }
 
-        if (!Contains(toRemove, attachable))
+        if (!Contains(_pendingRemoves, attachable))
         {
-            toRemove.Add(new AttachableRecord(attachable, callback));
+            _pendingRemoves.Add(new QueueEntry(attachable));
         }
     }
 
     public void Flush()
     {
-        var toAddSnapshot = toAdd.ToArray();
-        var toRemoveSnapshot = toRemove.ToArray();
-
-        toAdd.Clear();
-        toRemove.Clear();
-
-        foreach (var record in toAddSnapshot)
+        if (_pendingAdds.Count == 0 && _pendingRemoves.Count == 0)
         {
-            record.Callback(record.Attachable);
+            return;
         }
 
-        foreach (var record in toAddSnapshot)
+        Swap(ref _pendingAdds, ref _processingAdds);
+        Swap(ref _pendingRemoves, ref _processingRemoves);
+
+        var addCount = _processingAdds.Count;
+
+        for (var i = 0; i < addCount; i++)
         {
-            record.Attachable.Initialize();
+            var attachable = _processingAdds[i].Attachable;
+            _addCallback(attachable);
         }
 
-        foreach (var record in toAddSnapshot)
+        for (var i = 0; i < addCount; i++)
         {
-            record.Attachable.OnStart();
+            _processingAdds[i].Attachable.Initialize();
         }
 
-        foreach (var record in toRemoveSnapshot)
+        for (var i = 0; i < addCount; i++)
         {
-            record.Callback(record.Attachable);
+            _processingAdds[i].Attachable.OnStart();
         }
+
+        var removeCount = _processingRemoves.Count;
+
+        for (var i = 0; i < removeCount; i++)
+        {
+            var attachable = _processingRemoves[i].Attachable;
+            _removeCallback(attachable);
+        }
+
+        _processingAdds.Clear();
+        _processingRemoves.Clear();
     }
 
-    public T[] DrainPendingAdds()
+    public void DrainPendingAdds(Action<T> action)
     {
-        var pendingAdditions = new T[toAdd.Count];
+        ArgumentNullException.ThrowIfNull(action);
 
-        for (var i = 0; i < toAdd.Count; i++)
+        for (var i = 0; i < _pendingAdds.Count; i++)
         {
-            pendingAdditions[i] = toAdd[i].Attachable;
+            action(_pendingAdds[i].Attachable);
         }
 
-        return pendingAdditions;
+        _pendingAdds.Clear();
     }
 
     public void Clear()
     {
-        toAdd.Clear();
-        toRemove.Clear();
+        _pendingAdds.Clear();
+        _pendingRemoves.Clear();
+        _processingAdds.Clear();
+        _processingRemoves.Clear();
     }
 
-    private static bool Contains(List<AttachableRecord> records, T attachable)
+    private static void Swap(ref List<QueueEntry> left, ref List<QueueEntry> right)
     {
-        return FindIndex(records, attachable) >= 0;
+        var temp = left;
+        left = right;
+        right = temp;
     }
 
-    private static bool Remove(List<AttachableRecord> records, T attachable)
+    private static bool Contains(List<QueueEntry> entries, T attachable)
     {
-        var index = FindIndex(records, attachable);
+        return FindIndex(entries, attachable) >= 0;
+    }
+
+    private static bool Remove(List<QueueEntry> entries, T attachable)
+    {
+        var index = FindIndex(entries, attachable);
 
         if (index < 0)
         {
             return false;
         }
 
-        records.RemoveAt(index);
+        entries.RemoveAt(index);
         return true;
     }
 
-    private static int FindIndex(List<AttachableRecord> records, T attachable)
+    private static int FindIndex(List<QueueEntry> entries, T attachable)
     {
-        for (var i = 0; i < records.Count; i++)
+        for (var i = 0; i < entries.Count; i++)
         {
-            if (ReferenceEquals(records[i].Attachable, attachable))
+            if (ReferenceEquals(entries[i].Attachable, attachable))
             {
                 return i;
             }

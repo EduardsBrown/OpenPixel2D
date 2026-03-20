@@ -4,9 +4,9 @@ namespace OpenPixel2D.Engine;
 
 public class World : IDisposable
 {
-    private ResourceQueue<Entity> _entityQueue = new();
-    private ResourceQueue<UpdateSystem> _updateSystemQueue = new();
-    private ResourceQueue<RenderSystem> _renderSystemQueue = new();
+    private readonly ResourceQueue<Entity> _entityQueue;
+    private readonly ResourceQueue<UpdateSystem> _updateSystemQueue;
+    private readonly ResourceQueue<RenderSystem> _renderSystemQueue;
 
     private WorldState _state = WorldState.Bootstrap;
 
@@ -16,6 +16,13 @@ public class World : IDisposable
     private Dictionary<SystemGroup, List<IUpdateSystem>> _updateSystemGroups { get; set; } = [];
 
     public IReadOnlyList<Entity> Entities => _entities;
+
+    public World()
+    {
+        _entityQueue = new ResourceQueue<Entity>(Add, Remove);
+        _updateSystemQueue = new ResourceQueue<UpdateSystem>(Add, Remove);
+        _renderSystemQueue = new ResourceQueue<RenderSystem>(Add, Remove);
+    }
 
     public void Initialize()
     {
@@ -95,7 +102,7 @@ public class World : IDisposable
             return;
         }
 
-        _entityQueue.QueueAdd(entity, Add);
+        _entityQueue.QueueAdd(entity);
     }
 
     public void RemoveEntity(Entity entity)
@@ -116,7 +123,7 @@ public class World : IDisposable
             return;
         }
 
-        _entityQueue.QueueRemove(entity, Remove);
+        _entityQueue.QueueRemove(entity);
     }
 
     public void AddSystem(UpdateSystem system)
@@ -137,7 +144,7 @@ public class World : IDisposable
             return;
         }
 
-        _updateSystemQueue.QueueAdd(system, Add);
+        _updateSystemQueue.QueueAdd(system);
     }
 
     public void RemoveSystem(UpdateSystem system)
@@ -158,7 +165,7 @@ public class World : IDisposable
             return;
         }
 
-        _updateSystemQueue.QueueRemove(system, Remove);
+        _updateSystemQueue.QueueRemove(system);
     }
 
     public void AddSystem(RenderSystem system)
@@ -179,7 +186,7 @@ public class World : IDisposable
             return;
         }
 
-        _renderSystemQueue.QueueAdd(system, Add);
+        _renderSystemQueue.QueueAdd(system);
     }
 
     public void RemoveSystem(RenderSystem system)
@@ -200,7 +207,7 @@ public class World : IDisposable
             return;
         }
 
-        _renderSystemQueue.QueueRemove(system, Remove);
+        _renderSystemQueue.QueueRemove(system);
     }
 
     private void Add(Entity entity)
@@ -297,20 +304,9 @@ public class World : IDisposable
             entity.Dispose();
         }
 
-        foreach (var entity in _entityQueue.DrainPendingAdds())
-        {
-            entity.Dispose();
-        }
-
-        foreach (var system in _updateSystemQueue.DrainPendingAdds())
-        {
-            system.Dispose();
-        }
-
-        foreach (var system in _renderSystemQueue.DrainPendingAdds())
-        {
-            system.Dispose();
-        }
+        _entityQueue.DrainPendingAdds(static entity => entity.Dispose());
+        _updateSystemQueue.DrainPendingAdds(static system => system.Dispose());
+        _renderSystemQueue.DrainPendingAdds(static system => system.Dispose());
 
         _entityQueue.Clear();
         _updateSystemQueue.Clear();
