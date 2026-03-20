@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="OpenPixel2D.Abstractions/OpenPixel2D.Abstractions.csproj" />
+  <Project Path="OpenPixel2D.Engine/OpenPixel2D.Engine.csproj" />
 </Solution>

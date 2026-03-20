@@ -1,8 +1,6 @@
 ﻿namespace OpenPixel2D.Abstractions;
 
-public interface IRenderSystem : IDisposable
+public interface IRenderSystem : IDisposable, IAttachable
 {
-    void Initialize();
-    void OnStart();
     void Render();
 }
