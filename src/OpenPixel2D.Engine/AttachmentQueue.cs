@@ -30,40 +30,40 @@ internal sealed class ResourceQueue<T> where T : class, IAttachable
         _removeCallback = removeCallback;
     }
 
-    public bool HasPendingAdd(T attachable)
+    public void QueueAdd(T attachable, bool isActive)
     {
-        return Contains(_pendingAdds, attachable);
-    }
+        var pendingRemoveIndex = FindIndex(_pendingRemoves, attachable);
 
-    public bool HasPendingRemove(T attachable)
-    {
-        return Contains(_pendingRemoves, attachable);
-    }
+        if (pendingRemoveIndex >= 0)
+        {
+            _pendingRemoves.RemoveAt(pendingRemoveIndex);
+            return;
+        }
 
-    public void QueueAdd(T attachable)
-    {
-        if (Remove(_pendingRemoves, attachable))
+        if (isActive || FindIndex(_pendingAdds, attachable) >= 0)
         {
             return;
         }
 
-        if (!Contains(_pendingAdds, attachable))
-        {
-            _pendingAdds.Add(new QueueEntry(attachable));
-        }
+        _pendingAdds.Add(new QueueEntry(attachable));
     }
 
-    public void QueueRemove(T attachable)
+    public void QueueRemove(T attachable, bool isActive)
     {
-        if (Remove(_pendingAdds, attachable))
+        var pendingAddIndex = FindIndex(_pendingAdds, attachable);
+
+        if (pendingAddIndex >= 0)
+        {
+            _pendingAdds.RemoveAt(pendingAddIndex);
+            return;
+        }
+
+        if (!isActive || FindIndex(_pendingRemoves, attachable) >= 0)
         {
             return;
         }
 
-        if (!Contains(_pendingRemoves, attachable))
-        {
-            _pendingRemoves.Add(new QueueEntry(attachable));
-        }
+        _pendingRemoves.Add(new QueueEntry(attachable));
     }
 
     public void Flush()
@@ -131,24 +131,6 @@ internal sealed class ResourceQueue<T> where T : class, IAttachable
         var temp = left;
         left = right;
         right = temp;
-    }
-
-    private static bool Contains(List<QueueEntry> entries, T attachable)
-    {
-        return FindIndex(entries, attachable) >= 0;
-    }
-
-    private static bool Remove(List<QueueEntry> entries, T attachable)
-    {
-        var index = FindIndex(entries, attachable);
-
-        if (index < 0)
-        {
-            return false;
-        }
-
-        entries.RemoveAt(index);
-        return true;
     }
 
     private static int FindIndex(List<QueueEntry> entries, T attachable)

@@ -99,17 +99,7 @@ public class World : IDisposable
             return;
         }
 
-        if (_entityQueue.HasPendingAdd(entity))
-        {
-            return;
-        }
-
-        if (IsEntityActive(entity) && !_entityQueue.HasPendingRemove(entity))
-        {
-            return;
-        }
-
-        _entityQueue.QueueAdd(entity);
+        _entityQueue.QueueAdd(entity, IsEntityActive(entity));
     }
 
     public void RemoveEntity(Entity entity)
@@ -120,17 +110,7 @@ public class World : IDisposable
             return;
         }
 
-        if (_entityQueue.HasPendingRemove(entity))
-        {
-            return;
-        }
-
-        if (!IsEntityActive(entity) && !_entityQueue.HasPendingAdd(entity))
-        {
-            return;
-        }
-
-        _entityQueue.QueueRemove(entity);
+        _entityQueue.QueueRemove(entity, IsEntityActive(entity));
     }
 
     public void AddSystem(UpdateSystem system)
@@ -141,17 +121,7 @@ public class World : IDisposable
             return;
         }
 
-        if (_updateSystemQueue.HasPendingAdd(system))
-        {
-            return;
-        }
-
-        if (IsUpdateSystemActive(system) && !_updateSystemQueue.HasPendingRemove(system))
-        {
-            return;
-        }
-
-        _updateSystemQueue.QueueAdd(system);
+        _updateSystemQueue.QueueAdd(system, IsUpdateSystemActive(system));
     }
 
     public void RemoveSystem(UpdateSystem system)
@@ -162,17 +132,7 @@ public class World : IDisposable
             return;
         }
 
-        if (_updateSystemQueue.HasPendingRemove(system))
-        {
-            return;
-        }
-
-        if (!IsUpdateSystemActive(system) && !_updateSystemQueue.HasPendingAdd(system))
-        {
-            return;
-        }
-
-        _updateSystemQueue.QueueRemove(system);
+        _updateSystemQueue.QueueRemove(system, IsUpdateSystemActive(system));
     }
 
     public void AddSystem(RenderSystem system)
@@ -183,17 +143,7 @@ public class World : IDisposable
             return;
         }
 
-        if (_renderSystemQueue.HasPendingAdd(system))
-        {
-            return;
-        }
-
-        if (IsRenderSystemActive(system) && !_renderSystemQueue.HasPendingRemove(system))
-        {
-            return;
-        }
-
-        _renderSystemQueue.QueueAdd(system);
+        _renderSystemQueue.QueueAdd(system, IsRenderSystemActive(system));
     }
 
     public void RemoveSystem(RenderSystem system)
@@ -204,17 +154,7 @@ public class World : IDisposable
             return;
         }
 
-        if (_renderSystemQueue.HasPendingRemove(system))
-        {
-            return;
-        }
-
-        if (!IsRenderSystemActive(system) && !_renderSystemQueue.HasPendingAdd(system))
-        {
-            return;
-        }
-
-        _renderSystemQueue.QueueRemove(system);
+        _renderSystemQueue.QueueRemove(system, IsRenderSystemActive(system));
     }
 
     private void Add(Entity entity)
@@ -298,16 +238,19 @@ public class World : IDisposable
     {
         foreach (var system in _updateSystems)
         {
+            system.OnDestroy();
             system.Dispose();
         }
 
         foreach (var system in _renderSystems)
         {
+            system.OnDestroy();
             system.Dispose();
         }
 
         foreach (var entity in _entities)
         {
+            entity.OnDestroy();
             entity.Dispose();
         }
 
@@ -353,9 +296,14 @@ public class World : IDisposable
 
     private void UpdateGroup(SystemGroup group)
     {
-        foreach (var system in _updateSystemGroups[group])
+        if (!_updateSystemGroups.TryGetValue(group, out var systems))
         {
-            system.Update();
+            return;
+        }
+
+        for (var i = 0; i < systems.Count; i++)
+        {
+            systems[i].Update();
         }
     }
 }
