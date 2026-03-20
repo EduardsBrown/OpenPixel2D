@@ -1,8 +1,8 @@
-﻿using OpenPixel2D.Abstractions;
+using OpenPixel2D.Abstractions;
 
 namespace OpenPixel2D.Engine;
 
-internal class ResourceQueue<T> where T : IAttachable
+internal sealed class ResourceQueue<T> where T : class, IAttachable
 {
     private record AttachableRecord(T Attachable, Action<T> Callback);
 
@@ -19,60 +19,117 @@ internal class ResourceQueue<T> where T : IAttachable
         return toRemove.Count > 0;
     }
 
+    public bool HasPendingAdd(T attachable)
+    {
+        return Contains(toAdd, attachable);
+    }
+
+    public bool HasPendingRemove(T attachable)
+    {
+        return Contains(toRemove, attachable);
+    }
+
     public void QueueAdd(T attachable, Action<T> callback)
     {
-        var record = new AttachableRecord(attachable, callback);
-        if (!toAdd.Contains(record))
+        if (Remove(toRemove, attachable))
         {
-            toAdd.Add(record);
+            return;
+        }
+
+        if (!Contains(toAdd, attachable))
+        {
+            toAdd.Add(new AttachableRecord(attachable, callback));
         }
     }
 
     public void QueueRemove(T attachable, Action<T> callback)
     {
-        var record = new AttachableRecord(attachable, callback);
-
-        if (toAdd.Contains(record))
+        if (Remove(toAdd, attachable))
         {
-            toAdd.Remove(record);
             return;
         }
 
-        if (!toRemove.Contains(record))
+        if (!Contains(toRemove, attachable))
         {
-            toRemove.Add(record);
+            toRemove.Add(new AttachableRecord(attachable, callback));
         }
     }
 
     public void Flush()
     {
-        if (toAdd.Count > 0)
-        {
-            foreach (var record in toAdd)
-            {
-                record.Callback(record.Attachable);
-            }
-
-            foreach (var record in toAdd)
-            {
-                record.Attachable.Initialize();
-            }
-
-            foreach (var record in toAdd)
-            {
-                record.Attachable.OnStart();
-            }
-        }
-
-        if (toRemove.Count > 0)
-        {
-            foreach (var record in toRemove)
-            {
-                record.Callback(record.Attachable);
-            }
-        }
+        var toAddSnapshot = toAdd.ToArray();
+        var toRemoveSnapshot = toRemove.ToArray();
 
         toAdd.Clear();
         toRemove.Clear();
+
+        foreach (var record in toAddSnapshot)
+        {
+            record.Callback(record.Attachable);
+        }
+
+        foreach (var record in toAddSnapshot)
+        {
+            record.Attachable.Initialize();
+        }
+
+        foreach (var record in toAddSnapshot)
+        {
+            record.Attachable.OnStart();
+        }
+
+        foreach (var record in toRemoveSnapshot)
+        {
+            record.Callback(record.Attachable);
+        }
+    }
+
+    public T[] DrainPendingAdds()
+    {
+        var pendingAdditions = new T[toAdd.Count];
+
+        for (var i = 0; i < toAdd.Count; i++)
+        {
+            pendingAdditions[i] = toAdd[i].Attachable;
+        }
+
+        return pendingAdditions;
+    }
+
+    public void Clear()
+    {
+        toAdd.Clear();
+        toRemove.Clear();
+    }
+
+    private static bool Contains(List<AttachableRecord> records, T attachable)
+    {
+        return FindIndex(records, attachable) >= 0;
+    }
+
+    private static bool Remove(List<AttachableRecord> records, T attachable)
+    {
+        var index = FindIndex(records, attachable);
+
+        if (index < 0)
+        {
+            return false;
+        }
+
+        records.RemoveAt(index);
+        return true;
+    }
+
+    private static int FindIndex(List<AttachableRecord> records, T attachable)
+    {
+        for (var i = 0; i < records.Count; i++)
+        {
+            if (ReferenceEquals(records[i].Attachable, attachable))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 }
