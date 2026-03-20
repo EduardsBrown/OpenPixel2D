@@ -31,6 +31,13 @@ internal class ResourceQueue<T> where T : IAttachable
     public void QueueRemove(T attachable, Action<T> callback)
     {
         var record = new AttachableRecord(attachable, callback);
+
+        if (toAdd.Contains(record))
+        {
+            toAdd.Remove(record);
+            return;
+        }
+
         if (!toRemove.Contains(record))
         {
             toRemove.Add(record);
@@ -44,7 +51,15 @@ internal class ResourceQueue<T> where T : IAttachable
             foreach (var record in toAdd)
             {
                 record.Callback(record.Attachable);
+            }
+
+            foreach (var record in toAdd)
+            {
                 record.Attachable.Initialize();
+            }
+
+            foreach (var record in toAdd)
+            {
                 record.Attachable.OnStart();
             }
         }
@@ -56,5 +71,8 @@ internal class ResourceQueue<T> where T : IAttachable
                 record.Callback(record.Attachable);
             }
         }
+
+        toAdd.Clear();
+        toRemove.Clear();
     }
 }

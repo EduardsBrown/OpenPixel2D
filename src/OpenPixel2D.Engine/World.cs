@@ -19,6 +19,8 @@ public class World : IDisposable
 
     public void Initialize()
     {
+        _state = WorldState.Initialised;
+
         foreach (var entity in _entities)
         {
             entity.Initialize();
@@ -33,8 +35,6 @@ public class World : IDisposable
         {
             system.Initialize();
         }
-
-        _state = WorldState.Initialised;
     }
 
     public void Start()
