@@ -13,6 +13,9 @@ public class World : IDisposable
     private List<IUpdateSystem> _updateSystems { get; set; } = [];
     private List<IRenderSystem> _renderSystems { get; set; } = [];
     private Dictionary<SystemGroup, List<IUpdateSystem>> _updateSystemGroups { get; set; } = [];
+    private readonly Dictionary<Type, HashSet<Entity>> _entityCache = new();
+    private readonly Dictionary<Type, HashSet<IUpdateSystem>> _updateSystemCache = new();
+    private readonly Dictionary<Type, HashSet<IRenderSystem>> _renderSystemCache = new();
 
     public IReadOnlyList<Entity> Entities => _entities;
 
@@ -86,12 +89,39 @@ public class World : IDisposable
 
     public void RemoveEntity(Entity entity)
     {
-        if (!_entities.Remove(entity))
+        _entities.Remove(entity);
+    }
+
+    internal void RegisterEntityComponent(Entity entity, IComponent component)
+    {
+        var type = component.GetType();
+
+        if (!_entityCache.ContainsKey(type))
         {
-            return;
+            _entityCache[type] = [];
         }
 
-        entity.Dispose();
+        _entityCache[type].Add(entity);
+    }
+
+    internal void UnregisterEntityComponent(Entity entity, IComponent component)
+    {
+        var type = component.GetType();
+
+        if (_entityCache.TryGetValue(type, out var entities))
+        {
+            entities.Remove(entity);
+        }
+    }
+
+    public IEnumerable<Entity> GetEntitiesWith<T>() where T : IComponent
+    {
+        if (_entityCache.TryGetValue(typeof(T), out var entities))
+        {
+            return entities;
+        }
+
+        return Enumerable.Empty<Entity>();
     }
 
     public void AddSystem(UpdateSystem system)
