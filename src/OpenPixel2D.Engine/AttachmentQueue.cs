@@ -30,7 +30,7 @@ internal sealed class ResourceQueue<T> where T : class, IAttachable
         _removeCallback = removeCallback;
     }
 
-    public void QueueAdd(T attachable, bool isActive)
+    public void QueueAdd(T attachable)
     {
         var pendingRemoveIndex = FindIndex(_pendingRemoves, attachable);
 
@@ -40,7 +40,7 @@ internal sealed class ResourceQueue<T> where T : class, IAttachable
             return;
         }
 
-        if (isActive || FindIndex(_pendingAdds, attachable) >= 0)
+        if (FindIndex(_pendingAdds, attachable) >= 0)
         {
             return;
         }
@@ -48,7 +48,7 @@ internal sealed class ResourceQueue<T> where T : class, IAttachable
         _pendingAdds.Add(new QueueEntry(attachable));
     }
 
-    public void QueueRemove(T attachable, bool isActive)
+    public void QueueRemove(T attachable)
     {
         var pendingAddIndex = FindIndex(_pendingAdds, attachable);
 
@@ -58,7 +58,7 @@ internal sealed class ResourceQueue<T> where T : class, IAttachable
             return;
         }
 
-        if (!isActive || FindIndex(_pendingRemoves, attachable) >= 0)
+        if (FindIndex(_pendingRemoves, attachable) >= 0)
         {
             return;
         }

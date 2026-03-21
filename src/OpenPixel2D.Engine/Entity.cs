@@ -2,21 +2,9 @@
 
 namespace OpenPixel2D.Engine;
 
-public sealed class Entity : IAttachable
+public sealed class Entity
 {
     public World World { get; private set; }
-
-    public void Initialize()
-    {
-    }
-
-    public void OnStart()
-    {
-    }
-
-    public void OnDestroy()
-    {
-    }
 
     internal void SetWorld(World world)
     {
