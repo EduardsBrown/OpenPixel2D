@@ -12,10 +12,9 @@ public class World : IDisposable
     private List<Entity> _entities { get; set; } = [];
     private List<IUpdateSystem> _updateSystems { get; set; } = [];
     private List<IRenderSystem> _renderSystems { get; set; } = [];
+    private List<IBehaviorComponent> _behaviors { get; set; } = [];
     private Dictionary<SystemGroup, List<IUpdateSystem>> _updateSystemGroups { get; set; } = [];
     private readonly Dictionary<Type, HashSet<Entity>> _entityCache = new();
-    private readonly Dictionary<Type, HashSet<IUpdateSystem>> _updateSystemCache = new();
-    private readonly Dictionary<Type, HashSet<IRenderSystem>> _renderSystemCache = new();
 
     public IReadOnlyList<Entity> Entities => _entities;
 
@@ -83,13 +82,30 @@ public class World : IDisposable
 
     public void AddEntity(Entity entity)
     {
+        entity.DetachFromCurrentContainer();
         entity.SetWorld(this);
         _entities.Add(entity);
     }
 
     public void RemoveEntity(Entity entity)
     {
-        _entities.Remove(entity);
+        if (entity.Parent is not null)
+        {
+            if (!ReferenceEquals(entity.AttachedWorld, this))
+            {
+                return;
+            }
+
+            entity.Parent.RemoveEntity(entity);
+            return;
+        }
+
+        if (!_entities.Remove(entity))
+        {
+            return;
+        }
+
+        entity.Dispose();
     }
 
     internal void RegisterEntityComponent(Entity entity, IComponent component)
@@ -227,7 +243,7 @@ public class World : IDisposable
             system.Dispose();
         }
 
-        foreach (var entity in _entities)
+        foreach (var entity in _entities.ToArray())
         {
             entity.Dispose();
         }
@@ -242,6 +258,12 @@ public class World : IDisposable
         _updateSystemGroups.Clear();
         _renderSystems.Clear();
         _entities.Clear();
+        _entityCache.Clear();
+    }
+
+    internal bool DetachRootEntity(Entity entity)
+    {
+        return _entities.Remove(entity);
     }
 
     private List<IUpdateSystem> GetOrCreateUpdateSystemGroup(SystemGroup group)

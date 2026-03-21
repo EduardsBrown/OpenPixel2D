@@ -4,12 +4,14 @@ namespace OpenPixel2D.Engine;
 
 public abstract class UpdateSystem : IUpdateSystem
 {
+    private World? _world;
+
     public SystemGroup Group { get; set; }
-    public World World { get; private set; }
+    public World World => _world ?? throw new InvalidOperationException("System is not attached to a world.");
 
     internal void SetWorld(World world)
     {
-        World = world;
+        _world = world;
     }
 
     public virtual void Initialize()
@@ -23,13 +25,13 @@ public abstract class UpdateSystem : IUpdateSystem
     public virtual void Update()
     {
     }
-    
+
     public virtual void OnDestroy()
     {
     }
 
     public void Dispose()
     {
-        World = null;
+        _world = null;
     }
 }
