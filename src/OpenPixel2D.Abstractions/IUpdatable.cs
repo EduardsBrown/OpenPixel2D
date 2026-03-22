@@ -1,6 +1,6 @@
 ﻿namespace OpenPixel2D.Abstractions;
 
-public interface ICanUpdate
+public interface IUpdatable
 {
     void Update();
 }

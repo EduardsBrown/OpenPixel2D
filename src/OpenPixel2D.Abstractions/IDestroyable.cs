@@ -1,7 +1,6 @@
 ﻿namespace OpenPixel2D.Abstractions;
 
-public interface IAttachable
+public interface IDestroyable
 {
-    void OnStart();
     void OnDestroy();
 }

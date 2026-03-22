@@ -1,6 +1,6 @@
 ﻿namespace OpenPixel2D.Abstractions;
 
-public interface ICanInitialize
+public interface IInitializable
 {
     void Initialize();
 }

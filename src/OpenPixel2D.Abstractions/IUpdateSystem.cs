@@ -1,6 +1,6 @@
 ﻿namespace OpenPixel2D.Abstractions;
 
-public interface IUpdateSystem : IDisposable, IAttachable, ICanUpdate, ICanInitialize
+public interface IUpdateSystem : IDisposable, IInitializable, IStartable, IUpdatable, IDestroyable
 {
-    SystemGroup Group { get; set; }
+    SystemGroup Group { get; }
 }

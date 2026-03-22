@@ -1,6 +1,6 @@
 ﻿namespace OpenPixel2D.Abstractions;
 
-public interface ICanRender
+public interface IRenderable
 {
     void Render();
 }

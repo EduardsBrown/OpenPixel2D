@@ -4,7 +4,7 @@ namespace OpenPixel2D.Engine;
 
 public abstract class UpdateSystem : IUpdateSystem
 {
-    public SystemGroup Group { get; set; }
+    public SystemGroup Group { get; protected set; } = SystemGroup.Default;
 
     public virtual void Initialize()
     {
