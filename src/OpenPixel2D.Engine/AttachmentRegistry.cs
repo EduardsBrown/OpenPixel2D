@@ -1,5 +1,12 @@
 namespace OpenPixel2D.Engine;
 
+internal enum AttachmentActivationResult
+{
+    Pending,
+    Activated,
+    Discarded
+}
+
 internal sealed class AttachmentRegistry<T> where T : class
 {
     private readonly List<T> _items = [];
@@ -7,6 +14,8 @@ internal sealed class AttachmentRegistry<T> where T : class
     private readonly List<T> _pendingRemove = [];
 
     public IReadOnlyList<T> Items => _items;
+    public IReadOnlyList<T> PendingAdds => _pendingAdd;
+    public IReadOnlyList<T> PendingRemoves => _pendingRemove;
 
     public bool Contains(T item) => _items.Contains(item);
     public bool IsPendingAdd(T item) => _pendingAdd.Contains(item);
@@ -54,20 +63,32 @@ internal sealed class AttachmentRegistry<T> where T : class
         _pendingRemove.Clear();
     }
 
-    public void FlushAdditions(Func<T, bool> onAdd)
+    public void FlushAdditions(Func<T, AttachmentActivationResult> onAdd)
     {
         for (int i = 0; i < _pendingAdd.Count;)
         {
             T item = _pendingAdd[i];
+            AttachmentActivationResult result = onAdd(item);
 
-            if (!onAdd(item))
+            if (result == AttachmentActivationResult.Pending)
             {
                 i++;
                 continue;
             }
 
-            _items.Add(item);
+            if (result == AttachmentActivationResult.Activated)
+            {
+                _items.Add(item);
+            }
+
             _pendingAdd.RemoveAt(i);
         }
+    }
+
+    public void ClearAll()
+    {
+        _items.Clear();
+        _pendingAdd.Clear();
+        _pendingRemove.Clear();
     }
 }

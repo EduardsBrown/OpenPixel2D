@@ -12,9 +12,12 @@ public abstract class Component : IComponent
 
     [JsonIgnore]
     internal World? RegisteredWorld { get; private set; }
+    internal LifecycleFlags LifecycleFlags { get; private set; }
 
     internal void SetParent(Entity? parent) => Parent = parent;
     internal void SetRegisteredWorld(World? world) => RegisteredWorld = world;
+    internal bool HasLifecycleFlag(LifecycleFlags flag) => (LifecycleFlags & flag) == flag;
+    internal void MarkLifecycleFlag(LifecycleFlags flag) => LifecycleFlags |= flag;
 
     public virtual void Initialize()
     {

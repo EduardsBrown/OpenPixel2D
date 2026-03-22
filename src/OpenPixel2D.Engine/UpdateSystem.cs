@@ -7,9 +7,12 @@ public abstract class UpdateSystem : IUpdateSystem
     public World? World { get; private set; }
     public SystemGroup Group { get; protected set; } = SystemGroup.Default;
     internal World? RegisteredWorld { get; private set; }
+    internal LifecycleFlags LifecycleFlags { get; private set; }
 
     internal void SetWorld(World? world) => World = world;
     internal void SetRegisteredWorld(World? world) => RegisteredWorld = world;
+    internal bool HasLifecycleFlag(LifecycleFlags flag) => (LifecycleFlags & flag) == flag;
+    internal void MarkLifecycleFlag(LifecycleFlags flag) => LifecycleFlags |= flag;
 
     public virtual void Initialize()
     {
