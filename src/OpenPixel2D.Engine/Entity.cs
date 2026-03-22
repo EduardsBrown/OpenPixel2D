@@ -81,8 +81,8 @@ public sealed class Entity
             return;
         }
 
-        RemoveComponentDirect(component);
         World?.UnregisterComponent(component);
+        RemoveComponentDirect(component);
     }
 
     internal void DetachFromOwner()

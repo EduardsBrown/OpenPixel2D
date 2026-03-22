@@ -11,6 +11,7 @@ public sealed class World : IDisposable
     private readonly AttachmentRegistry<BehaviorComponent> _behaviorRegistry = new();
     private readonly AttachmentRegistry<UpdateSystem> _updateSysRegistry = new();
     private readonly AttachmentRegistry<RenderSystem> _renderSysRegistry = new();
+    private readonly ComponentTypeEntityIndex _componentTypeEntityIndex = new();
 
     public IReadOnlyList<Entity> Entities => _entities;
     public IReadOnlyList<UpdateSystem> UpdateSystems => _updateSysRegistry.Items;
@@ -273,6 +274,23 @@ public sealed class World : IDisposable
         system.SetWorld(null);
     }
 
+    public IReadOnlyCollection<Entity> GetEntitiesWithComponentType(Type componentType)
+    {
+        if (componentType == null)
+        {
+            throw new ArgumentException("Component type cannot be null.", nameof(componentType));
+        }
+
+        if (componentType.IsInterface || !typeof(Component).IsAssignableFrom(componentType))
+        {
+            throw new ArgumentException(
+                $"Component type must be {nameof(Component)} or a non-interface type derived from it.",
+                nameof(componentType));
+        }
+
+        return _componentTypeEntityIndex.GetEntities(componentType);
+    }
+
     internal void RegisterComponent(Component component)
     {
         if (component.HasLifecycleFlag(LifecycleFlags.Disposed))
@@ -282,6 +300,11 @@ public sealed class World : IDisposable
 
         _componentRegistry.QueueAdd(component);
 
+        if (component.RegisteredWorld == this && component.Parent?.World == this)
+        {
+            _componentTypeEntityIndex.Add(component);
+        }
+
         if (component is BehaviorComponent behaviorComponent)
         {
             _behaviorRegistry.QueueAdd(behaviorComponent);
@@ -290,6 +313,11 @@ public sealed class World : IDisposable
 
     internal void UnregisterComponent(Component component)
     {
+        if (component.RegisteredWorld == this)
+        {
+            _componentTypeEntityIndex.Remove(component);
+        }
+
         if (component is BehaviorComponent behaviorComponent)
         {
             _behaviorRegistry.QueueRemove(behaviorComponent);
@@ -363,6 +391,7 @@ public sealed class World : IDisposable
             }
 
             component.SetRegisteredWorld(this);
+            _componentTypeEntityIndex.Add(component);
             activatedComponents?.Add(component);
             return AttachmentActivationResult.Activated;
         });
@@ -504,6 +533,7 @@ public sealed class World : IDisposable
         }
 
         _entities.Clear();
+        _componentTypeEntityIndex.Clear();
 
         for (int i = 0; i < _componentRegistry.Items.Count; i++)
         {

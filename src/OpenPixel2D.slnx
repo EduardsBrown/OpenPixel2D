@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="OpenPixel2D.Abstractions/OpenPixel2D.Abstractions.csproj" />
   <Project Path="OpenPixel2D.Engine/OpenPixel2D.Engine.csproj" />
+  <Project Path="OpenPixel2D.Engine.Extensions/OpenPixel2D.Engine.Extensions.csproj" />
   <Project Path="OpenPixel2D.Engine.Benchmarks/OpenPixel2D.Engine.Benchmarks.csproj" />
   <Project Path="OpenPixel2D.Engine.Tests/OpenPixel2D.Engine.Tests.csproj" />
 </Solution>
