@@ -113,6 +113,28 @@ public sealed class EntityAttachmentTests
     }
 
     [Fact]
+    public void AddComponent_RemoveBeforeFlush_CancelsActivation()
+    {
+        World world = new();
+        Entity entity = new();
+        TestComponent component = new();
+        world.AddEntity(entity);
+        FlushPendingAdditions(world);
+
+        entity.AddComponent(component);
+        entity.RemoveComponent(component);
+
+        Assert.Empty(entity.Components);
+        Assert.Null(component.Parent);
+        Assert.Empty(world.RegisteredComponents);
+
+        FlushPendingAdditions(world);
+        FlushPendingRemovals(world);
+
+        Assert.Empty(world.RegisteredComponents);
+    }
+
+    [Fact]
     public void RemoveComponent_QueuesRemovalUntilFlush()
     {
         World world = new();
@@ -132,6 +154,31 @@ public sealed class EntityAttachmentTests
         FlushPendingRemovals(world);
 
         Assert.Empty(world.RegisteredComponents);
+    }
+
+    [Fact]
+    public void RemoveComponent_ReAddBeforeRemovalFlush_CancelsRemovalWithoutDuplicates()
+    {
+        World world = new();
+        Entity entity = new();
+        TestComponent component = new();
+        entity.AddComponent(component);
+        world.AddEntity(entity);
+        FlushPendingAdditions(world);
+
+        entity.RemoveComponent(component);
+        entity.AddComponent(component);
+
+        Assert.Single(entity.Components);
+        Assert.Same(entity, component.Parent);
+        Assert.Single(world.RegisteredComponents);
+        Assert.Contains(component, world.RegisteredComponents);
+
+        FlushPendingRemovals(world);
+        FlushPendingAdditions(world);
+
+        Assert.Single(world.RegisteredComponents);
+        Assert.Contains(component, world.RegisteredComponents);
     }
 
     [Fact]
@@ -279,6 +326,62 @@ public sealed class EntityAttachmentTests
     }
 
     [Fact]
+    public void AddEntity_RepairsChildCollectionWhenParentPointerAlreadyMatches()
+    {
+        Entity parent = new();
+        Entity child = new();
+        child.SetParent(parent);
+
+        parent.AddEntity(child);
+
+        Assert.Single(parent.Children);
+        Assert.Same(child, parent.Children[0]);
+        Assert.Same(parent, child.Parent);
+    }
+
+    [Fact]
+    public void AddComponent_RepairsComponentCollectionWhenParentPointerAlreadyMatches()
+    {
+        Entity entity = new();
+        TestComponent component = new();
+        component.SetParent(entity);
+
+        entity.AddComponent(component);
+
+        Assert.Single(entity.Components);
+        Assert.Same(component, entity.Components[0]);
+        Assert.Same(entity, component.Parent);
+    }
+
+    [Fact]
+    public void AddChildDirect_IgnoresDuplicateEntries()
+    {
+        Entity parent = new();
+        Entity child = new();
+
+        parent.AddChildDirect(child);
+        parent.AddChildDirect(child);
+
+        Assert.Single(parent.Children);
+        Assert.Same(child, parent.Children[0]);
+        Assert.Same(parent, child.Parent);
+    }
+
+    [Fact]
+    public void AddComponentDirect_IgnoresDuplicateEntries()
+    {
+        Entity entity = new();
+        TestComponent component = new();
+
+        entity.AddComponent(component);
+        entity.AddComponent(component);
+
+        Assert.Single(entity.Components);
+        Assert.Same(component, entity.Components[0]);
+        Assert.Same(entity, component.Parent);
+    }
+
+    [Fact]
     public void RemoveOperations_IgnoreEntitiesTheyDoNotOwn()
     {
         World world = new();
@@ -395,4 +498,3 @@ public sealed class EntityAttachmentTests
     {
     }
 }
-

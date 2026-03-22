@@ -1,4 +1,4 @@
-﻿namespace OpenPixel2D.Engine;
+namespace OpenPixel2D.Engine;
 
 public sealed class Entity
 {
@@ -13,7 +13,12 @@ public sealed class Entity
 
     public void AddEntity(Entity? child)
     {
-        if (child == null || child == this || child.Parent == this || child.ContainsInSubtree(this))
+        if (child == null || child == this || child.ContainsInSubtree(this))
+        {
+            return;
+        }
+
+        if (child.Parent == this && _children.Contains(child) && child.World == World)
         {
             return;
         }
@@ -21,14 +26,15 @@ public sealed class Entity
         if (child.World == World)
         {
             child.DetachFromOwnerPreservingWorld();
-            AddChildDirect(child);
-            return;
+        }
+        else
+        {
+            child.DetachFromOwner();
         }
 
-        child.DetachFromOwner();
         AddChildDirect(child);
 
-        if (World == null)
+        if (World == null || child.World == World)
         {
             return;
         }
@@ -49,16 +55,22 @@ public sealed class Entity
 
     public void AddComponent(Component? component)
     {
-        if (component == null || component.Parent == this)
+        if (component == null)
         {
             return;
         }
 
-        component.Parent?.RemoveComponent(component);
+        if (component.Parent == this && _components.Contains(component))
+        {
+            return;
+        }
 
-        _components.Add(component);
-        component.SetParent(this);
+        if (component.Parent != null && component.Parent != this)
+        {
+            component.Parent.RemoveComponent(component);
+        }
 
+        AddComponentDirect(component);
         World?.RegisterComponent(component);
     }
 
@@ -69,13 +81,8 @@ public sealed class Entity
             return;
         }
 
-        if (!_components.Remove(component))
-        {
-            return;
-        }
-
+        RemoveComponentDirect(component);
         World?.UnregisterComponent(component);
-        component.SetParent(null);
     }
 
     internal void DetachFromOwner()
@@ -161,17 +168,45 @@ public sealed class Entity
 
     internal void AddChildDirect(Entity child)
     {
+        if (_children.Contains(child))
+        {
+            child.SetParent(this);
+            return;
+        }
+
         _children.Add(child);
         child.SetParent(this);
     }
 
     internal void RemoveChildDirect(Entity child)
     {
-        if (!_children.Remove(child))
+        if (!_children.Remove(child) && child.Parent != this)
         {
             return;
         }
 
         child.SetParent(null);
+    }
+
+    internal void AddComponentDirect(Component component)
+    {
+        if (_components.Contains(component))
+        {
+            component.SetParent(this);
+            return;
+        }
+
+        _components.Add(component);
+        component.SetParent(this);
+    }
+
+    internal void RemoveComponentDirect(Component component)
+    {
+        if (!_components.Remove(component) && component.Parent != this)
+        {
+            return;
+        }
+
+        component.SetParent(null);
     }
 }

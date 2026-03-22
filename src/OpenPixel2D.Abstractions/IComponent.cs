@@ -1,6 +1,6 @@
-﻿namespace OpenPixel2D.Abstractions;
+namespace OpenPixel2D.Abstractions;
 
-public interface IComponent : IDisposable, IInitializable, IStartable
+public interface IComponent : IDisposable, IInitializable
 {
     bool Active { get; }
 }

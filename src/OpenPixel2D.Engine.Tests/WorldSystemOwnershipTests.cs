@@ -14,15 +14,17 @@ public sealed class WorldSystemOwnershipTests
 
         Assert.Empty(world.UpdateSystems);
         Assert.Same(world, system.World);
+        Assert.Null(system.RegisteredWorld);
 
         FlushPendingAdditions(world);
 
         Assert.Single(world.UpdateSystems);
         Assert.Same(system, world.UpdateSystems[0]);
+        Assert.Same(world, system.RegisteredWorld);
     }
 
     [Fact]
-    public void RemoveSystem_QueuesUpdateSystemRemovalUntilFlush()
+    public void RemoveSystem_KeepsUpdateSystemOwnedUntilRemovalFlush()
     {
         World world = new();
         TestUpdateSystem system = new();
@@ -31,10 +33,32 @@ public sealed class WorldSystemOwnershipTests
 
         world.RemoveSystem(system);
 
-        Assert.Null(system.World);
+        Assert.Same(world, system.World);
+        Assert.Same(world, system.RegisteredWorld);
         Assert.Single(world.UpdateSystems);
         Assert.Same(system, world.UpdateSystems[0]);
 
+        FlushPendingRemovals(world);
+
+        Assert.Null(system.World);
+        Assert.Null(system.RegisteredWorld);
+        Assert.Empty(world.UpdateSystems);
+    }
+
+    [Fact]
+    public void RemoveSystem_DetachesPendingUpdateSystemWithoutFlush()
+    {
+        World world = new();
+        TestUpdateSystem system = new();
+
+        world.AddSystem(system);
+        world.RemoveSystem(system);
+
+        Assert.Null(system.World);
+        Assert.Null(system.RegisteredWorld);
+        Assert.Empty(world.UpdateSystems);
+
+        FlushPendingAdditions(world);
         FlushPendingRemovals(world);
 
         Assert.Empty(world.UpdateSystems);
@@ -79,6 +103,49 @@ public sealed class WorldSystemOwnershipTests
     }
 
     [Fact]
+    public void AddSystem_CancelsPendingUpdateSystemRemovalInTheSameWorld()
+    {
+        World world = new();
+        TestUpdateSystem system = new();
+        world.AddSystem(system);
+        FlushPendingAdditions(world);
+
+        world.RemoveSystem(system);
+        world.AddSystem(system);
+
+        Assert.Same(world, system.World);
+        Assert.Same(world, system.RegisteredWorld);
+        Assert.Single(world.UpdateSystems);
+
+        FlushPendingRemovals(world);
+        FlushPendingAdditions(world);
+
+        Assert.Single(world.UpdateSystems);
+        Assert.Same(system, world.UpdateSystems[0]);
+        Assert.Same(world, system.World);
+        Assert.Same(world, system.RegisteredWorld);
+    }
+
+    [Fact]
+    public void AddSystem_QueuesStructurallyOwnedInactiveUpdateSystem()
+    {
+        World world = new();
+        TestUpdateSystem system = new();
+        system.SetWorld(world);
+
+        world.AddSystem(system);
+
+        Assert.Same(world, system.World);
+        Assert.Null(system.RegisteredWorld);
+        Assert.Empty(world.UpdateSystems);
+
+        FlushPendingAdditions(world);
+
+        Assert.Single(world.UpdateSystems);
+        Assert.Same(world, system.RegisteredWorld);
+    }
+
+    [Fact]
     public void MoveUpdateSystemBetweenWorlds_BlocksActivationUntilOldWorldRemovalsFlush()
     {
         World oldWorld = new();
@@ -102,11 +169,51 @@ public sealed class WorldSystemOwnershipTests
         FlushPendingRemovals(oldWorld);
 
         Assert.Empty(oldWorld.UpdateSystems);
+        Assert.Null(system.RegisteredWorld);
+        Assert.Same(newWorld, system.World);
 
         FlushPendingAdditions(newWorld);
 
         Assert.Single(newWorld.UpdateSystems);
         Assert.Same(system, newWorld.UpdateSystems[0]);
+        Assert.Same(newWorld, system.RegisteredWorld);
+    }
+
+    [Fact]
+    public void MoveUpdateSystemBetweenMultipleWorlds_ActivatesOnlyInFinalWorld()
+    {
+        World firstWorld = new();
+        World secondWorld = new();
+        World thirdWorld = new();
+        TestUpdateSystem system = new();
+        firstWorld.AddSystem(system);
+        FlushPendingAdditions(firstWorld);
+
+        secondWorld.AddSystem(system);
+        thirdWorld.AddSystem(system);
+
+        Assert.Same(thirdWorld, system.World);
+        Assert.Same(firstWorld, system.RegisteredWorld);
+        Assert.Single(firstWorld.UpdateSystems);
+        Assert.Empty(secondWorld.UpdateSystems);
+        Assert.Empty(thirdWorld.UpdateSystems);
+
+        FlushPendingAdditions(secondWorld);
+        FlushPendingRemovals(secondWorld);
+        FlushPendingAdditions(thirdWorld);
+
+        Assert.Empty(secondWorld.UpdateSystems);
+        Assert.Empty(thirdWorld.UpdateSystems);
+        Assert.Single(firstWorld.UpdateSystems);
+
+        FlushPendingRemovals(firstWorld);
+        FlushPendingAdditions(thirdWorld);
+
+        Assert.Empty(firstWorld.UpdateSystems);
+        Assert.Empty(secondWorld.UpdateSystems);
+        Assert.Single(thirdWorld.UpdateSystems);
+        Assert.Same(thirdWorld, system.World);
+        Assert.Same(thirdWorld, system.RegisteredWorld);
     }
 
     [Fact]
@@ -135,15 +242,17 @@ public sealed class WorldSystemOwnershipTests
 
         Assert.Empty(world.RenderSystems);
         Assert.Same(world, system.World);
+        Assert.Null(system.RegisteredWorld);
 
         FlushPendingAdditions(world);
 
         Assert.Single(world.RenderSystems);
         Assert.Same(system, world.RenderSystems[0]);
+        Assert.Same(world, system.RegisteredWorld);
     }
 
     [Fact]
-    public void RemoveSystem_QueuesRenderSystemRemovalUntilFlush()
+    public void RemoveSystem_KeepsRenderSystemOwnedUntilRemovalFlush()
     {
         World world = new();
         TestRenderSystem system = new();
@@ -152,10 +261,32 @@ public sealed class WorldSystemOwnershipTests
 
         world.RemoveSystem(system);
 
-        Assert.Null(system.World);
+        Assert.Same(world, system.World);
+        Assert.Same(world, system.RegisteredWorld);
         Assert.Single(world.RenderSystems);
         Assert.Same(system, world.RenderSystems[0]);
 
+        FlushPendingRemovals(world);
+
+        Assert.Null(system.World);
+        Assert.Null(system.RegisteredWorld);
+        Assert.Empty(world.RenderSystems);
+    }
+
+    [Fact]
+    public void RemoveSystem_DetachesPendingRenderSystemWithoutFlush()
+    {
+        World world = new();
+        TestRenderSystem system = new();
+
+        world.AddSystem(system);
+        world.RemoveSystem(system);
+
+        Assert.Null(system.World);
+        Assert.Null(system.RegisteredWorld);
+        Assert.Empty(world.RenderSystems);
+
+        FlushPendingAdditions(world);
         FlushPendingRemovals(world);
 
         Assert.Empty(world.RenderSystems);
@@ -200,6 +331,49 @@ public sealed class WorldSystemOwnershipTests
     }
 
     [Fact]
+    public void AddSystem_CancelsPendingRenderSystemRemovalInTheSameWorld()
+    {
+        World world = new();
+        TestRenderSystem system = new();
+        world.AddSystem(system);
+        FlushPendingAdditions(world);
+
+        world.RemoveSystem(system);
+        world.AddSystem(system);
+
+        Assert.Same(world, system.World);
+        Assert.Same(world, system.RegisteredWorld);
+        Assert.Single(world.RenderSystems);
+
+        FlushPendingRemovals(world);
+        FlushPendingAdditions(world);
+
+        Assert.Single(world.RenderSystems);
+        Assert.Same(system, world.RenderSystems[0]);
+        Assert.Same(world, system.World);
+        Assert.Same(world, system.RegisteredWorld);
+    }
+
+    [Fact]
+    public void AddSystem_QueuesStructurallyOwnedInactiveRenderSystem()
+    {
+        World world = new();
+        TestRenderSystem system = new();
+        system.SetWorld(world);
+
+        world.AddSystem(system);
+
+        Assert.Same(world, system.World);
+        Assert.Null(system.RegisteredWorld);
+        Assert.Empty(world.RenderSystems);
+
+        FlushPendingAdditions(world);
+
+        Assert.Single(world.RenderSystems);
+        Assert.Same(world, system.RegisteredWorld);
+    }
+
+    [Fact]
     public void MoveRenderSystemBetweenWorlds_BlocksActivationUntilOldWorldRemovalsFlush()
     {
         World oldWorld = new();
@@ -210,6 +384,7 @@ public sealed class WorldSystemOwnershipTests
 
         newWorld.AddSystem(system);
 
+        Assert.Same(oldWorld, system.RegisteredWorld);
         Assert.Empty(newWorld.RenderSystems);
         Assert.Single(oldWorld.RenderSystems);
         Assert.Same(newWorld, system.World);
@@ -222,11 +397,14 @@ public sealed class WorldSystemOwnershipTests
         FlushPendingRemovals(oldWorld);
 
         Assert.Empty(oldWorld.RenderSystems);
+        Assert.Null(system.RegisteredWorld);
+        Assert.Same(newWorld, system.World);
 
         FlushPendingAdditions(newWorld);
 
         Assert.Single(newWorld.RenderSystems);
         Assert.Same(system, newWorld.RenderSystems[0]);
+        Assert.Same(newWorld, system.RegisteredWorld);
     }
 
     [Fact]
@@ -263,4 +441,3 @@ public sealed class WorldSystemOwnershipTests
     {
     }
 }
-

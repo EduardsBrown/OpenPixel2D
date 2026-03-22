@@ -1,4 +1,4 @@
-﻿namespace OpenPixel2D.Engine;
+namespace OpenPixel2D.Engine;
 
 public sealed class World : IDisposable
 {
@@ -100,8 +100,24 @@ public sealed class World : IDisposable
 
     public void AddSystem(UpdateSystem? system)
     {
-        if (system == null || system.World == this)
+        if (system == null)
         {
+            return;
+        }
+
+        if (system.World == this)
+        {
+            if (_updateSysRegistry.Contains(system) && !_updateSysRegistry.IsPendingRemove(system))
+            {
+                return;
+            }
+
+            if (_updateSysRegistry.IsPendingAdd(system))
+            {
+                return;
+            }
+
+            QueueRegisterUpdateSystem(system);
             return;
         }
 
@@ -117,14 +133,51 @@ public sealed class World : IDisposable
             return;
         }
 
+        if (_updateSysRegistry.IsPendingAdd(system) && !_updateSysRegistry.Contains(system))
+        {
+            QueueUnregisterUpdateSystem(system);
+
+            if (system.RegisteredWorld == null)
+            {
+                system.SetWorld(null);
+            }
+            else if (system.RegisteredWorld != this)
+            {
+                system.SetWorld(system.RegisteredWorld);
+            }
+
+            return;
+        }
+
+        if (_updateSysRegistry.Contains(system) || _updateSysRegistry.IsPendingRemove(system))
+        {
+            QueueUnregisterUpdateSystem(system);
+            return;
+        }
+
         system.SetWorld(null);
-        QueueUnregisterUpdateSystem(system);
     }
 
     public void AddSystem(RenderSystem? system)
     {
-        if (system == null || system.World == this)
+        if (system == null)
         {
+            return;
+        }
+
+        if (system.World == this)
+        {
+            if (_renderSysRegistry.Contains(system) && !_renderSysRegistry.IsPendingRemove(system))
+            {
+                return;
+            }
+
+            if (_renderSysRegistry.IsPendingAdd(system))
+            {
+                return;
+            }
+
+            QueueRegisterRenderSystem(system);
             return;
         }
 
@@ -140,8 +193,29 @@ public sealed class World : IDisposable
             return;
         }
 
+        if (_renderSysRegistry.IsPendingAdd(system) && !_renderSysRegistry.Contains(system))
+        {
+            QueueUnregisterRenderSystem(system);
+
+            if (system.RegisteredWorld == null)
+            {
+                system.SetWorld(null);
+            }
+            else if (system.RegisteredWorld != this)
+            {
+                system.SetWorld(system.RegisteredWorld);
+            }
+
+            return;
+        }
+
+        if (_renderSysRegistry.Contains(system) || _renderSysRegistry.IsPendingRemove(system))
+        {
+            QueueUnregisterRenderSystem(system);
+            return;
+        }
+
         system.SetWorld(null);
-        QueueUnregisterRenderSystem(system);
     }
 
     internal void RegisterComponent(Component component)
@@ -202,8 +276,8 @@ public sealed class World : IDisposable
     {
         _behaviorRegistry.FlushRemovals(static _ => { });
         _componentRegistry.FlushRemovals(component => component.SetRegisteredWorld(null));
-        _updateSysRegistry.FlushRemovals(system => system.SetRegisteredWorld(null));
-        _renderSysRegistry.FlushRemovals(system => system.SetRegisteredWorld(null));
+        _updateSysRegistry.FlushRemovals(FlushRemovedUpdateSystem);
+        _renderSysRegistry.FlushRemovals(FlushRemovedRenderSystem);
     }
 
     internal void FlushPendingAdditions()
@@ -223,7 +297,7 @@ public sealed class World : IDisposable
         {
             if (behaviorComponent.Parent?.World != this ||
                 behaviorComponent.RegisteredWorld != this ||
-                !_componentRegistry.Items.Contains(behaviorComponent))
+                !_componentRegistry.Contains(behaviorComponent))
             {
                 return false;
             }
@@ -272,5 +346,25 @@ public sealed class World : IDisposable
     private void QueueUnregisterRenderSystem(RenderSystem system)
     {
         _renderSysRegistry.QueueRemove(system);
+    }
+
+    private void FlushRemovedUpdateSystem(UpdateSystem system)
+    {
+        system.SetRegisteredWorld(null);
+
+        if (system.World == this)
+        {
+            system.SetWorld(null);
+        }
+    }
+
+    private void FlushRemovedRenderSystem(RenderSystem system)
+    {
+        system.SetRegisteredWorld(null);
+
+        if (system.World == this)
+        {
+            system.SetWorld(null);
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace OpenPixel2D.Engine;
+namespace OpenPixel2D.Engine;
 
 internal sealed class AttachmentRegistry<T> where T : class
 {
@@ -7,6 +7,10 @@ internal sealed class AttachmentRegistry<T> where T : class
     private readonly List<T> _pendingRemove = [];
 
     public IReadOnlyList<T> Items => _items;
+
+    public bool Contains(T item) => _items.Contains(item);
+    public bool IsPendingAdd(T item) => _pendingAdd.Contains(item);
+    public bool IsPendingRemove(T item) => _pendingRemove.Contains(item);
 
     public void QueueAdd(T item)
     {

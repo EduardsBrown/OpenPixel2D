@@ -1,5 +1,5 @@
-﻿namespace OpenPixel2D.Abstractions;
+namespace OpenPixel2D.Abstractions;
 
-public interface IBehaviorComponent : IComponent, IUpdatable, IDestroyable
+public interface IBehaviorComponent : IComponent, IStartable, IUpdatable, IDestroyable
 {
 }

@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using OpenPixel2D.Abstractions;
 
 namespace OpenPixel2D.Engine;
@@ -17,10 +17,6 @@ public abstract class Component : IComponent
     internal void SetRegisteredWorld(World? world) => RegisteredWorld = world;
 
     public virtual void Initialize()
-    {
-    }
-
-    public virtual void OnStart()
     {
     }
 
