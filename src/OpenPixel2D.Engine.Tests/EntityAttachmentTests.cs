@@ -236,6 +236,45 @@ public sealed class EntityAttachmentTests
         Assert.Contains(weaponComponent, world.RegisteredComponents);
     }
 
+    [Fact]
+    public void AddComponent_AllowsMultipleComponentsOfTheSameType()
+    {
+        World world = new();
+        Entity entity = new();
+        TestComponent first = new();
+        TestComponent second = new();
+
+        entity.AddComponent(first);
+        entity.AddComponent(second);
+        world.AddEntity(entity);
+
+        Assert.Equal(2, entity.Components.Count);
+        Assert.Same(first, entity.Components[0]);
+        Assert.Same(second, entity.Components[1]);
+        Assert.Same(entity, first.Parent);
+        Assert.Same(entity, second.Parent);
+        Assert.Equal(2, world.RegisteredComponents.Count);
+        Assert.Contains(first, world.RegisteredComponents);
+        Assert.Contains(second, world.RegisteredComponents);
+    }
+
+    [Fact]
+    public void AddComponent_PreventsDuplicateRegistrationForTheSameInstance()
+    {
+        World world = new();
+        Entity entity = new();
+        TestComponent component = new();
+        world.AddEntity(entity);
+
+        entity.AddComponent(component);
+        entity.AddComponent(component);
+
+        Assert.Single(entity.Components);
+        Assert.Single(world.RegisteredComponents);
+        Assert.Same(component, entity.Components[0]);
+        Assert.Contains(component, world.RegisteredComponents);
+    }
+
     private static (Entity Player, Entity Weapon, Entity Gem, TestComponent PlayerComponent, TestBehaviorComponent WeaponBehavior, TestComponent GemComponent) CreateSubtree()
     {
         Entity player = new();
@@ -270,4 +309,5 @@ public sealed class EntityAttachmentTests
     {
     }
 }
+
 
