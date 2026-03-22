@@ -100,18 +100,14 @@ public sealed class World : IDisposable
 
     public void AddSystem(UpdateSystem? system)
     {
-        if (system == null)
+        if (system == null || system.World == this)
         {
             return;
         }
 
-        if (system.World == this && _updateSysRegistry.Items.Contains(system))
-        {
-            return;
-        }
-
-        system.World?.DetachUpdateSystem(system);
-        AttachUpdateSystem(system);
+        system.World?.RemoveSystem(system);
+        system.SetWorld(this);
+        QueueRegisterUpdateSystem(system);
     }
 
     public void RemoveSystem(UpdateSystem? system)
@@ -121,23 +117,20 @@ public sealed class World : IDisposable
             return;
         }
 
-        DetachUpdateSystem(system);
+        system.SetWorld(null);
+        QueueUnregisterUpdateSystem(system);
     }
 
     public void AddSystem(RenderSystem? system)
     {
-        if (system == null)
+        if (system == null || system.World == this)
         {
             return;
         }
 
-        if (system.World == this && _renderSysRegistry.Items.Contains(system))
-        {
-            return;
-        }
-
-        system.World?.DetachRenderSystem(system);
-        AttachRenderSystem(system);
+        system.World?.RemoveSystem(system);
+        system.SetWorld(this);
+        QueueRegisterRenderSystem(system);
     }
 
     public void RemoveSystem(RenderSystem? system)
@@ -147,27 +140,28 @@ public sealed class World : IDisposable
             return;
         }
 
-        DetachRenderSystem(system);
+        system.SetWorld(null);
+        QueueUnregisterRenderSystem(system);
     }
 
     internal void RegisterComponent(Component component)
     {
-        _componentRegistry.Add(component);
+        _componentRegistry.QueueAdd(component);
 
         if (component is BehaviorComponent behaviorComponent)
         {
-            _behaviorRegistry.Add(behaviorComponent);
+            _behaviorRegistry.QueueAdd(behaviorComponent);
         }
     }
 
     internal void UnregisterComponent(Component component)
     {
-        _componentRegistry.Remove(component);
-
         if (component is BehaviorComponent behaviorComponent)
         {
-            _behaviorRegistry.Remove(behaviorComponent);
+            _behaviorRegistry.QueueRemove(behaviorComponent);
         }
+
+        _componentRegistry.QueueRemove(component);
     }
 
     internal void RegisterSubtree(Entity entity)
@@ -204,45 +198,79 @@ public sealed class World : IDisposable
         entity.SetParent(null);
     }
 
-    private void AttachUpdateSystem(UpdateSystem system)
+    internal void FlushPendingRemovals()
     {
-        _updateSysRegistry.Add(system);
-        system.SetWorld(this);
+        _behaviorRegistry.FlushRemovals(static _ => { });
+        _componentRegistry.FlushRemovals(component => component.SetRegisteredWorld(null));
+        _updateSysRegistry.FlushRemovals(system => system.SetRegisteredWorld(null));
+        _renderSysRegistry.FlushRemovals(system => system.SetRegisteredWorld(null));
     }
 
-    private void DetachUpdateSystem(UpdateSystem system)
+    internal void FlushPendingAdditions()
     {
-        if (!_updateSysRegistry.Items.Contains(system))
+        _componentRegistry.FlushAdditions(component =>
         {
-            return;
-        }
+            if (component.Parent?.World != this || component.RegisteredWorld != null)
+            {
+                return false;
+            }
 
-        _updateSysRegistry.Remove(system);
+            component.SetRegisteredWorld(this);
+            return true;
+        });
 
-        if (system.World == this)
+        _behaviorRegistry.FlushAdditions(behaviorComponent =>
         {
-            system.SetWorld(null);
-        }
+            if (behaviorComponent.Parent?.World != this ||
+                behaviorComponent.RegisteredWorld != this ||
+                !_componentRegistry.Items.Contains(behaviorComponent))
+            {
+                return false;
+            }
+
+            return true;
+        });
+
+        _updateSysRegistry.FlushAdditions(system =>
+        {
+            if (system.World != this || system.RegisteredWorld != null)
+            {
+                return false;
+            }
+
+            system.SetRegisteredWorld(this);
+            return true;
+        });
+
+        _renderSysRegistry.FlushAdditions(system =>
+        {
+            if (system.World != this || system.RegisteredWorld != null)
+            {
+                return false;
+            }
+
+            system.SetRegisteredWorld(this);
+            return true;
+        });
     }
 
-    private void AttachRenderSystem(RenderSystem system)
+    private void QueueRegisterUpdateSystem(UpdateSystem system)
     {
-        _renderSysRegistry.Add(system);
-        system.SetWorld(this);
+        _updateSysRegistry.QueueAdd(system);
     }
 
-    private void DetachRenderSystem(RenderSystem system)
+    private void QueueUnregisterUpdateSystem(UpdateSystem system)
     {
-        if (!_renderSysRegistry.Items.Contains(system))
-        {
-            return;
-        }
+        _updateSysRegistry.QueueRemove(system);
+    }
 
-        _renderSysRegistry.Remove(system);
+    private void QueueRegisterRenderSystem(RenderSystem system)
+    {
+        _renderSysRegistry.QueueAdd(system);
+    }
 
-        if (system.World == this)
-        {
-            system.SetWorld(null);
-        }
+    private void QueueUnregisterRenderSystem(RenderSystem system)
+    {
+        _renderSysRegistry.QueueRemove(system);
     }
 }

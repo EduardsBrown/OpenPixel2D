@@ -6,8 +6,10 @@ public abstract class UpdateSystem : IUpdateSystem
 {
     public World? World { get; private set; }
     public SystemGroup Group { get; protected set; } = SystemGroup.Default;
+    internal World? RegisteredWorld { get; private set; }
 
     internal void SetWorld(World? world) => World = world;
+    internal void SetRegisteredWorld(World? world) => RegisteredWorld = world;
 
     public virtual void Initialize()
     {

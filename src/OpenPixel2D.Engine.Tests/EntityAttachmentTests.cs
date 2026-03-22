@@ -5,7 +5,7 @@ namespace OpenPixel2D.Engine.Tests;
 public sealed class EntityAttachmentTests
 {
     [Fact]
-    public void AddEntity_AttachesSubtreeAsRootAndRegistersComponents()
+    public void AddEntity_QueuesSubtreeRegistrationUntilFlush()
     {
         World world = new();
         var (player, weapon, gem, playerComponent, weaponBehavior, gemComponent) = CreateSubtree();
@@ -21,6 +21,11 @@ public sealed class EntityAttachmentTests
         Assert.Same(world, player.World);
         Assert.Same(world, weapon.World);
         Assert.Same(world, gem.World);
+        Assert.Empty(world.RegisteredComponents);
+        Assert.Empty(world.RegisteredBehaviorComponents);
+
+        FlushPendingAdditions(world);
+
         Assert.Equal(3, world.RegisteredComponents.Count);
         Assert.Single(world.RegisteredBehaviorComponents);
         Assert.Contains(playerComponent, world.RegisteredComponents);
@@ -30,13 +35,14 @@ public sealed class EntityAttachmentTests
     }
 
     [Fact]
-    public void AddChild_AttachesSubtreeToParentsWorldAndKeepsWorldRootsFlat()
+    public void AddChild_QueuesSubtreeRegistrationUntilFlush()
     {
         World world = new();
         Entity player = new();
         TestComponent playerComponent = new();
         player.AddComponent(playerComponent);
         world.AddEntity(player);
+        FlushPendingAdditions(world);
 
         var (weapon, gem, weaponBehavior, gemComponent) = CreateChildSubtree();
 
@@ -49,6 +55,11 @@ public sealed class EntityAttachmentTests
         Assert.Same(weapon, gem.Parent);
         Assert.Same(world, weapon.World);
         Assert.Same(world, gem.World);
+        Assert.Single(world.RegisteredComponents);
+        Assert.Contains(playerComponent, world.RegisteredComponents);
+
+        FlushPendingAdditions(world);
+
         Assert.Equal(3, world.RegisteredComponents.Count);
         Assert.Single(world.RegisteredBehaviorComponents);
         Assert.Contains(playerComponent, world.RegisteredComponents);
@@ -57,64 +68,115 @@ public sealed class EntityAttachmentTests
     }
 
     [Fact]
-    public void AddChild_MovesWorldRootUnderParentWithoutDuplicatingRegistration()
+    public void RemoveEntity_QueuesSubtreeRemovalUntilFlush()
     {
         World world = new();
-        Entity player = new();
-        TestComponent playerComponent = new();
-        player.AddComponent(playerComponent);
-
-        Entity weapon = new();
-        TestBehaviorComponent weaponBehavior = new();
-        weapon.AddComponent(weaponBehavior);
+        var (player, _, _, _, weaponBehavior, _) = CreateSubtree();
 
         world.AddEntity(player);
-        world.AddEntity(weapon);
+        FlushPendingAdditions(world);
 
-        int registeredBefore = world.RegisteredComponents.Count;
-        int behaviorsBefore = world.RegisteredBehaviorComponents.Count;
+        world.RemoveEntity(player);
 
-        player.AddEntity(weapon);
-
-        Assert.Single(world.Entities);
-        Assert.Same(player, world.Entities[0]);
-        Assert.Single(player.Children);
-        Assert.Same(player, weapon.Parent);
-        Assert.Same(world, weapon.World);
-        Assert.Equal(registeredBefore, world.RegisteredComponents.Count);
-        Assert.Equal(behaviorsBefore, world.RegisteredBehaviorComponents.Count);
-        Assert.Contains(playerComponent, world.RegisteredComponents);
-        Assert.Contains(weaponBehavior, world.RegisteredComponents);
-    }
-
-    [Fact]
-    public void AddEntity_MovesChildToWorldRootWithoutDuplicatingRegistration()
-    {
-        World world = new();
-        Entity player = new();
-        Entity weapon = new();
-        TestBehaviorComponent weaponBehavior = new();
-
-        weapon.AddComponent(weaponBehavior);
-        player.AddEntity(weapon);
-        world.AddEntity(player);
-
-        int registeredBefore = world.RegisteredComponents.Count;
-        int behaviorsBefore = world.RegisteredBehaviorComponents.Count;
-
-        world.AddEntity(weapon);
-
-        Assert.Equal(2, world.Entities.Count);
-        Assert.Empty(player.Children);
-        Assert.Null(weapon.Parent);
-        Assert.Same(world, weapon.World);
-        Assert.Equal(registeredBefore, world.RegisteredComponents.Count);
-        Assert.Equal(behaviorsBefore, world.RegisteredBehaviorComponents.Count);
+        Assert.Empty(world.Entities);
+        Assert.Null(player.World);
+        Assert.Equal(3, world.RegisteredComponents.Count);
+        Assert.Single(world.RegisteredBehaviorComponents);
         Assert.Contains(weaponBehavior, world.RegisteredBehaviorComponents);
+
+        FlushPendingRemovals(world);
+
+        Assert.Empty(world.RegisteredComponents);
+        Assert.Empty(world.RegisteredBehaviorComponents);
     }
 
     [Fact]
-    public void AddChild_MovesEntityBetweenParentsInSameWorldWithoutDuplicatingRegistration()
+    public void AddComponent_QueuesActivationUntilFlush()
+    {
+        World world = new();
+        Entity entity = new();
+        world.AddEntity(entity);
+        FlushPendingAdditions(world);
+
+        TestComponent component = new();
+
+        entity.AddComponent(component);
+
+        Assert.Single(entity.Components);
+        Assert.Same(entity, component.Parent);
+        Assert.Empty(world.RegisteredComponents);
+
+        FlushPendingAdditions(world);
+
+        Assert.Single(world.RegisteredComponents);
+        Assert.Contains(component, world.RegisteredComponents);
+    }
+
+    [Fact]
+    public void RemoveComponent_QueuesRemovalUntilFlush()
+    {
+        World world = new();
+        Entity entity = new();
+        TestComponent component = new();
+        entity.AddComponent(component);
+        world.AddEntity(entity);
+        FlushPendingAdditions(world);
+
+        entity.RemoveComponent(component);
+
+        Assert.Empty(entity.Components);
+        Assert.Null(component.Parent);
+        Assert.Single(world.RegisteredComponents);
+        Assert.Contains(component, world.RegisteredComponents);
+
+        FlushPendingRemovals(world);
+
+        Assert.Empty(world.RegisteredComponents);
+    }
+
+    [Fact]
+    public void BehaviorComponent_BecomesActiveOnlyAfterComponentFlush()
+    {
+        World world = new();
+        Entity entity = new();
+        TestBehaviorComponent behavior = new();
+        entity.AddComponent(behavior);
+        world.AddEntity(entity);
+
+        Assert.Empty(world.RegisteredComponents);
+        Assert.Empty(world.RegisteredBehaviorComponents);
+
+        FlushPendingAdditions(world);
+
+        Assert.Single(world.RegisteredComponents);
+        Assert.Single(world.RegisteredBehaviorComponents);
+        Assert.Contains(behavior, world.RegisteredComponents);
+        Assert.Contains(behavior, world.RegisteredBehaviorComponents);
+    }
+
+    [Fact]
+    public void BehaviorComponent_RemainsConsistentDuringQueuedRemoval()
+    {
+        World world = new();
+        Entity entity = new();
+        TestBehaviorComponent behavior = new();
+        entity.AddComponent(behavior);
+        world.AddEntity(entity);
+        FlushPendingAdditions(world);
+
+        entity.RemoveComponent(behavior);
+
+        Assert.Single(world.RegisteredComponents);
+        Assert.Single(world.RegisteredBehaviorComponents);
+
+        FlushPendingRemovals(world);
+
+        Assert.Empty(world.RegisteredComponents);
+        Assert.Empty(world.RegisteredBehaviorComponents);
+    }
+
+    [Fact]
+    public void SameWorldMove_DoesNotChangeActiveRegistrations()
     {
         World world = new();
         Entity player = new();
@@ -126,6 +188,7 @@ public sealed class EntityAttachmentTests
         player.AddEntity(weapon);
         world.AddEntity(player);
         world.AddEntity(chest);
+        FlushPendingAdditions(world);
 
         int registeredBefore = world.RegisteredComponents.Count;
 
@@ -137,27 +200,48 @@ public sealed class EntityAttachmentTests
         Assert.Same(chest, weapon.Parent);
         Assert.Same(world, weapon.World);
         Assert.Equal(registeredBefore, world.RegisteredComponents.Count);
+
+        FlushPendingRemovals(world);
+        FlushPendingAdditions(world);
+
+        Assert.Equal(registeredBefore, world.RegisteredComponents.Count);
         Assert.Contains(weaponComponent, world.RegisteredComponents);
     }
 
     [Fact]
-    public void AddEntity_MovesSubtreeBetweenWorldsAndTransfersRegistration()
+    public void CrossWorldMove_BlocksActivationUntilOldWorldRemovalsFlush()
     {
         World firstWorld = new();
         World secondWorld = new();
         var (player, weapon, gem, playerComponent, weaponBehavior, gemComponent) = CreateSubtree();
 
         firstWorld.AddEntity(player);
+        FlushPendingAdditions(firstWorld);
+
         secondWorld.AddEntity(player);
 
         Assert.Empty(firstWorld.Entities);
-        Assert.Empty(firstWorld.RegisteredComponents);
-        Assert.Empty(firstWorld.RegisteredBehaviorComponents);
         Assert.Single(secondWorld.Entities);
-        Assert.Same(player, secondWorld.Entities[0]);
         Assert.Same(secondWorld, player.World);
         Assert.Same(secondWorld, weapon.World);
         Assert.Same(secondWorld, gem.World);
+        Assert.Equal(3, firstWorld.RegisteredComponents.Count);
+        Assert.Single(firstWorld.RegisteredBehaviorComponents);
+        Assert.Empty(secondWorld.RegisteredComponents);
+        Assert.Empty(secondWorld.RegisteredBehaviorComponents);
+
+        FlushPendingAdditions(secondWorld);
+
+        Assert.Empty(secondWorld.RegisteredComponents);
+        Assert.Empty(secondWorld.RegisteredBehaviorComponents);
+
+        FlushPendingRemovals(firstWorld);
+
+        Assert.Empty(firstWorld.RegisteredComponents);
+        Assert.Empty(firstWorld.RegisteredBehaviorComponents);
+
+        FlushPendingAdditions(secondWorld);
+
         Assert.Equal(3, secondWorld.RegisteredComponents.Count);
         Assert.Single(secondWorld.RegisteredBehaviorComponents);
         Assert.Contains(playerComponent, secondWorld.RegisteredComponents);
@@ -195,22 +279,6 @@ public sealed class EntityAttachmentTests
     }
 
     [Fact]
-    public void AddEntity_ReattachesSubtreeWithoutDuplicatingRegistration()
-    {
-        World world = new();
-        var (player, _, _, _, weaponBehavior, _) = CreateSubtree();
-
-        world.AddEntity(player);
-        world.RemoveEntity(player);
-        world.AddEntity(player);
-
-        Assert.Single(world.Entities);
-        Assert.Equal(3, world.RegisteredComponents.Count);
-        Assert.Single(world.RegisteredBehaviorComponents);
-        Assert.Contains(weaponBehavior, world.RegisteredBehaviorComponents);
-    }
-
-    [Fact]
     public void RemoveOperations_IgnoreEntitiesTheyDoNotOwn()
     {
         World world = new();
@@ -221,6 +289,7 @@ public sealed class EntityAttachmentTests
         weapon.AddComponent(weaponComponent);
         player.AddEntity(weapon);
         world.AddEntity(player);
+        FlushPendingAdditions(world);
 
         Entity otherParent = new();
 
@@ -249,11 +318,13 @@ public sealed class EntityAttachmentTests
         world.AddEntity(entity);
 
         Assert.Equal(2, entity.Components.Count);
+        Assert.Empty(world.RegisteredComponents);
+
+        FlushPendingAdditions(world);
+
+        Assert.Equal(2, world.RegisteredComponents.Count);
         Assert.Same(first, entity.Components[0]);
         Assert.Same(second, entity.Components[1]);
-        Assert.Same(entity, first.Parent);
-        Assert.Same(entity, second.Parent);
-        Assert.Equal(2, world.RegisteredComponents.Count);
         Assert.Contains(first, world.RegisteredComponents);
         Assert.Contains(second, world.RegisteredComponents);
     }
@@ -265,14 +336,29 @@ public sealed class EntityAttachmentTests
         Entity entity = new();
         TestComponent component = new();
         world.AddEntity(entity);
+        FlushPendingAdditions(world);
 
         entity.AddComponent(component);
         entity.AddComponent(component);
 
         Assert.Single(entity.Components);
+        Assert.Empty(world.RegisteredComponents);
+
+        FlushPendingAdditions(world);
+
         Assert.Single(world.RegisteredComponents);
         Assert.Same(component, entity.Components[0]);
         Assert.Contains(component, world.RegisteredComponents);
+    }
+
+    private static void FlushPendingRemovals(World world)
+    {
+        world.FlushPendingRemovals();
+    }
+
+    private static void FlushPendingAdditions(World world)
+    {
+        world.FlushPendingAdditions();
     }
 
     private static (Entity Player, Entity Weapon, Entity Gem, TestComponent PlayerComponent, TestBehaviorComponent WeaponBehavior, TestComponent GemComponent) CreateSubtree()
@@ -309,5 +395,4 @@ public sealed class EntityAttachmentTests
     {
     }
 }
-
 

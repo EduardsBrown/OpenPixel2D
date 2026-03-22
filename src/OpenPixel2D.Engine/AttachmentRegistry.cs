@@ -7,46 +7,15 @@ internal sealed class AttachmentRegistry<T> where T : class
     private readonly List<T> _pendingRemove = [];
 
     public IReadOnlyList<T> Items => _items;
-    
-    public void Add(T item)
-    {
-        if (_pendingRemove.Remove(item))
-        {
-            return;
-        }
-
-        if (_items.Contains(item))
-        {
-            return;
-        }
-
-        _pendingAdd.Remove(item);
-        _items.Add(item);
-    }
-
-    public void Remove(T item)
-    {
-        if (_pendingAdd.Remove(item))
-        {
-            return;
-        }
-
-        if (!_items.Remove(item))
-        {
-            return;
-        }
-
-        _pendingRemove.Remove(item);
-    }
 
     public void QueueAdd(T item)
     {
-        if (_items.Contains(item) || _pendingAdd.Contains(item))
+        if (_pendingRemove.Remove(item))
         {
             return;
         }
 
-        if (_pendingRemove.Remove(item))
+        if (_items.Contains(item) || _pendingAdd.Contains(item))
         {
             return;
         }
@@ -81,15 +50,20 @@ internal sealed class AttachmentRegistry<T> where T : class
         _pendingRemove.Clear();
     }
 
-    public void FlushAdditions(Action<T> onAdd)
+    public void FlushAdditions(Func<T, bool> onAdd)
     {
-        for (int i = 0; i < _pendingAdd.Count; i++)
+        for (int i = 0; i < _pendingAdd.Count;)
         {
             T item = _pendingAdd[i];
-            _items.Add(item);
-            onAdd(item);
-        }
 
-        _pendingAdd.Clear();
+            if (!onAdd(item))
+            {
+                i++;
+                continue;
+            }
+
+            _items.Add(item);
+            _pendingAdd.RemoveAt(i);
+        }
     }
 }

@@ -5,8 +5,10 @@ namespace OpenPixel2D.Engine;
 public abstract class RenderSystem : IRenderSystem
 {
     public World? World { get; private set; }
+    internal World? RegisteredWorld { get; private set; }
 
     internal void SetWorld(World? world) => World = world;
+    internal void SetRegisteredWorld(World? world) => RegisteredWorld = world;
 
     public virtual void Initialize()
     {

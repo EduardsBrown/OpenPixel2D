@@ -10,7 +10,11 @@ public abstract class Component : IComponent
     [JsonIgnore]
     public Entity? Parent { get; private set; }
 
+    [JsonIgnore]
+    internal World? RegisteredWorld { get; private set; }
+
     internal void SetParent(Entity? parent) => Parent = parent;
+    internal void SetRegisteredWorld(World? world) => RegisteredWorld = world;
 
     public virtual void Initialize()
     {
