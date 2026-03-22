@@ -40,7 +40,7 @@ public sealed class EntityAttachmentTests
 
         var (weapon, gem, weaponBehavior, gemComponent) = CreateChildSubtree();
 
-        player.AddChild(weapon);
+        player.AddEntity(weapon);
 
         Assert.Single(world.Entities);
         Assert.Same(player, world.Entities[0]);
@@ -74,7 +74,7 @@ public sealed class EntityAttachmentTests
         int registeredBefore = world.RegisteredComponents.Count;
         int behaviorsBefore = world.RegisteredBehaviorComponents.Count;
 
-        player.AddChild(weapon);
+        player.AddEntity(weapon);
 
         Assert.Single(world.Entities);
         Assert.Same(player, world.Entities[0]);
@@ -96,7 +96,7 @@ public sealed class EntityAttachmentTests
         TestBehaviorComponent weaponBehavior = new();
 
         weapon.AddComponent(weaponBehavior);
-        player.AddChild(weapon);
+        player.AddEntity(weapon);
         world.AddEntity(player);
 
         int registeredBefore = world.RegisteredComponents.Count;
@@ -123,13 +123,13 @@ public sealed class EntityAttachmentTests
         TestComponent weaponComponent = new();
 
         weapon.AddComponent(weaponComponent);
-        player.AddChild(weapon);
+        player.AddEntity(weapon);
         world.AddEntity(player);
         world.AddEntity(chest);
 
         int registeredBefore = world.RegisteredComponents.Count;
 
-        chest.AddChild(weapon);
+        chest.AddEntity(weapon);
 
         Assert.Equal(2, world.Entities.Count);
         Assert.Empty(player.Children);
@@ -170,7 +170,7 @@ public sealed class EntityAttachmentTests
     {
         Entity entity = new();
 
-        entity.AddChild(entity);
+        entity.AddEntity(entity);
 
         Assert.Empty(entity.Children);
         Assert.Null(entity.Parent);
@@ -184,9 +184,9 @@ public sealed class EntityAttachmentTests
         Entity weapon = new();
         Entity gem = new();
 
-        weapon.AddChild(gem);
-        player.AddChild(weapon);
-        gem.AddChild(player);
+        weapon.AddEntity(gem);
+        player.AddEntity(weapon);
+        gem.AddEntity(player);
 
         Assert.Null(player.Parent);
         Assert.Same(player, weapon.Parent);
@@ -219,12 +219,12 @@ public sealed class EntityAttachmentTests
         TestComponent weaponComponent = new();
 
         weapon.AddComponent(weaponComponent);
-        player.AddChild(weapon);
+        player.AddEntity(weapon);
         world.AddEntity(player);
 
         Entity otherParent = new();
 
-        otherParent.RemoveChild(weapon);
+        otherParent.RemoveEntity(weapon);
         world.RemoveEntity(weapon);
 
         Assert.Single(world.Entities);
@@ -243,7 +243,7 @@ public sealed class EntityAttachmentTests
         player.AddComponent(playerComponent);
 
         var (weapon, gem, weaponBehavior, gemComponent) = CreateChildSubtree();
-        player.AddChild(weapon);
+        player.AddEntity(weapon);
 
         return (player, weapon, gem, playerComponent, weaponBehavior, gemComponent);
     }
@@ -257,7 +257,7 @@ public sealed class EntityAttachmentTests
 
         gem.AddComponent(gemComponent);
         weapon.AddComponent(weaponBehavior);
-        weapon.AddChild(gem);
+        weapon.AddEntity(gem);
 
         return (weapon, gem, weaponBehavior, gemComponent);
     }

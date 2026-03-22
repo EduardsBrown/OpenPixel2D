@@ -5,13 +5,13 @@ public sealed class Entity
     private readonly List<Component> _components = [];
     private readonly List<Entity> _children = [];
 
-    public Guid Id { get; set; }
+    public Guid Id { get; } = Guid.NewGuid();
     public World? World { get; private set; }
     public Entity? Parent { get; private set; }
     public IReadOnlyList<Component> Components => _components;
     public IReadOnlyList<Entity> Children => _children;
 
-    public void AddChild(Entity? child)
+    public void AddEntity(Entity? child)
     {
         if (child == null || child == this || child.Parent == this || child.ContainsInSubtree(this))
         {
@@ -37,7 +37,7 @@ public sealed class Entity
         World.RegisterSubtree(child);
     }
 
-    public void RemoveChild(Entity? child)
+    public void RemoveEntity(Entity? child)
     {
         if (child == null || child.Parent != this)
         {
