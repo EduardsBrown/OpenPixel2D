@@ -297,6 +297,77 @@ public sealed class EntityAttachmentTests
     }
 
     [Fact]
+    public void MovePendingSubtreeBetweenWorlds_ActivatesOnlyInLatestWorld()
+    {
+        World firstWorld = new();
+        World secondWorld = new();
+        var (player, _, _, playerComponent, weaponBehavior, gemComponent) = CreateSubtree();
+
+        firstWorld.AddEntity(player);
+        secondWorld.AddEntity(player);
+
+        Assert.Empty(firstWorld.Entities);
+        Assert.Single(secondWorld.Entities);
+        Assert.Same(secondWorld, player.World);
+        Assert.Empty(firstWorld.RegisteredComponents);
+        Assert.Empty(secondWorld.RegisteredComponents);
+
+        FlushPendingAdditions(firstWorld);
+        FlushPendingRemovals(firstWorld);
+
+        Assert.Empty(firstWorld.RegisteredComponents);
+        Assert.Empty(secondWorld.RegisteredComponents);
+
+        FlushPendingAdditions(secondWorld);
+
+        Assert.Empty(firstWorld.RegisteredComponents);
+        Assert.Equal(3, secondWorld.RegisteredComponents.Count);
+        Assert.Single(secondWorld.RegisteredBehaviorComponents);
+        Assert.Contains(playerComponent, secondWorld.RegisteredComponents);
+        Assert.Contains(weaponBehavior, secondWorld.RegisteredComponents);
+        Assert.Contains(gemComponent, secondWorld.RegisteredComponents);
+    }
+
+    [Fact]
+    public void MoveSubtreeBetweenMultipleWorlds_ActivatesComponentsOnlyInFinalWorld()
+    {
+        World firstWorld = new();
+        World secondWorld = new();
+        World thirdWorld = new();
+        var (player, _, _, playerComponent, weaponBehavior, gemComponent) = CreateSubtree();
+
+        firstWorld.AddEntity(player);
+        FlushPendingAdditions(firstWorld);
+
+        secondWorld.AddEntity(player);
+        thirdWorld.AddEntity(player);
+
+        Assert.Same(thirdWorld, player.World);
+        Assert.Equal(3, firstWorld.RegisteredComponents.Count);
+        Assert.Empty(secondWorld.RegisteredComponents);
+        Assert.Empty(thirdWorld.RegisteredComponents);
+
+        FlushPendingAdditions(secondWorld);
+        FlushPendingRemovals(secondWorld);
+        FlushPendingAdditions(thirdWorld);
+
+        Assert.Equal(3, firstWorld.RegisteredComponents.Count);
+        Assert.Empty(secondWorld.RegisteredComponents);
+        Assert.Empty(thirdWorld.RegisteredComponents);
+
+        FlushPendingRemovals(firstWorld);
+        FlushPendingAdditions(thirdWorld);
+
+        Assert.Empty(firstWorld.RegisteredComponents);
+        Assert.Empty(secondWorld.RegisteredComponents);
+        Assert.Equal(3, thirdWorld.RegisteredComponents.Count);
+        Assert.Single(thirdWorld.RegisteredBehaviorComponents);
+        Assert.Contains(playerComponent, thirdWorld.RegisteredComponents);
+        Assert.Contains(weaponBehavior, thirdWorld.RegisteredComponents);
+        Assert.Contains(gemComponent, thirdWorld.RegisteredComponents);
+    }
+
+    [Fact]
     public void AddChild_IgnoresSelfAttachment()
     {
         Entity entity = new();

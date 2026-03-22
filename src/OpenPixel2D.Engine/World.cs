@@ -25,7 +25,7 @@ public sealed class World : IDisposable
         _state = WorldState.Initialized;
     }
 
-    public void OnStart()
+    public void Start()
     {
         // TODO: Start
 
@@ -40,7 +40,7 @@ public sealed class World : IDisposable
     {
     }
 
-    public void OnDestroy()
+    public void Destroy()
     {
         // TODO: Destroy
 

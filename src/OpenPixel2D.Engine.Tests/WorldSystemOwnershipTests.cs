@@ -180,6 +180,35 @@ public sealed class WorldSystemOwnershipTests
     }
 
     [Fact]
+    public void MovePendingUpdateSystemBetweenWorlds_ActivatesOnlyInLatestWorld()
+    {
+        World firstWorld = new();
+        World secondWorld = new();
+        TestUpdateSystem system = new();
+
+        firstWorld.AddSystem(system);
+        secondWorld.AddSystem(system);
+
+        Assert.Same(secondWorld, system.World);
+        Assert.Null(system.RegisteredWorld);
+        Assert.Empty(firstWorld.UpdateSystems);
+        Assert.Empty(secondWorld.UpdateSystems);
+
+        FlushPendingAdditions(firstWorld);
+        FlushPendingRemovals(firstWorld);
+
+        Assert.Empty(firstWorld.UpdateSystems);
+        Assert.Empty(secondWorld.UpdateSystems);
+
+        FlushPendingAdditions(secondWorld);
+
+        Assert.Empty(firstWorld.UpdateSystems);
+        Assert.Single(secondWorld.UpdateSystems);
+        Assert.Same(system, secondWorld.UpdateSystems[0]);
+        Assert.Same(secondWorld, system.RegisteredWorld);
+    }
+
+    [Fact]
     public void MoveUpdateSystemBetweenMultipleWorlds_ActivatesOnlyInFinalWorld()
     {
         World firstWorld = new();
@@ -405,6 +434,72 @@ public sealed class WorldSystemOwnershipTests
         Assert.Single(newWorld.RenderSystems);
         Assert.Same(system, newWorld.RenderSystems[0]);
         Assert.Same(newWorld, system.RegisteredWorld);
+    }
+
+    [Fact]
+    public void MovePendingRenderSystemBetweenWorlds_ActivatesOnlyInLatestWorld()
+    {
+        World firstWorld = new();
+        World secondWorld = new();
+        TestRenderSystem system = new();
+
+        firstWorld.AddSystem(system);
+        secondWorld.AddSystem(system);
+
+        Assert.Same(secondWorld, system.World);
+        Assert.Null(system.RegisteredWorld);
+        Assert.Empty(firstWorld.RenderSystems);
+        Assert.Empty(secondWorld.RenderSystems);
+
+        FlushPendingAdditions(firstWorld);
+        FlushPendingRemovals(firstWorld);
+
+        Assert.Empty(firstWorld.RenderSystems);
+        Assert.Empty(secondWorld.RenderSystems);
+
+        FlushPendingAdditions(secondWorld);
+
+        Assert.Empty(firstWorld.RenderSystems);
+        Assert.Single(secondWorld.RenderSystems);
+        Assert.Same(system, secondWorld.RenderSystems[0]);
+        Assert.Same(secondWorld, system.RegisteredWorld);
+    }
+
+    [Fact]
+    public void MoveRenderSystemBetweenMultipleWorlds_ActivatesOnlyInFinalWorld()
+    {
+        World firstWorld = new();
+        World secondWorld = new();
+        World thirdWorld = new();
+        TestRenderSystem system = new();
+        firstWorld.AddSystem(system);
+        FlushPendingAdditions(firstWorld);
+
+        secondWorld.AddSystem(system);
+        thirdWorld.AddSystem(system);
+
+        Assert.Same(thirdWorld, system.World);
+        Assert.Same(firstWorld, system.RegisteredWorld);
+        Assert.Single(firstWorld.RenderSystems);
+        Assert.Empty(secondWorld.RenderSystems);
+        Assert.Empty(thirdWorld.RenderSystems);
+
+        FlushPendingAdditions(secondWorld);
+        FlushPendingRemovals(secondWorld);
+        FlushPendingAdditions(thirdWorld);
+
+        Assert.Empty(secondWorld.RenderSystems);
+        Assert.Empty(thirdWorld.RenderSystems);
+        Assert.Single(firstWorld.RenderSystems);
+
+        FlushPendingRemovals(firstWorld);
+        FlushPendingAdditions(thirdWorld);
+
+        Assert.Empty(firstWorld.RenderSystems);
+        Assert.Empty(secondWorld.RenderSystems);
+        Assert.Single(thirdWorld.RenderSystems);
+        Assert.Same(thirdWorld, system.World);
+        Assert.Same(thirdWorld, system.RegisteredWorld);
     }
 
     [Fact]
