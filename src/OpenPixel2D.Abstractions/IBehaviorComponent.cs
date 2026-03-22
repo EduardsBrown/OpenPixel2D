@@ -1,6 +1,5 @@
 ﻿namespace OpenPixel2D.Abstractions;
 
-public interface IBehaviorComponent : IComponent, IAttachable
+public interface IBehaviorComponent : IComponent, IAttachable, ICanUpdate
 {
-    void Update();
 }

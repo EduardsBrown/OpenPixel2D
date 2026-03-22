@@ -2,14 +2,8 @@
 
 namespace OpenPixel2D.Engine;
 
-public abstract class UpdateSystem : IUpdateSystem
+public abstract class BehaviorComponent : Component, IBehaviorComponent
 {
-    public SystemGroup Group { get; set; }
-
-    public virtual void Initialize()
-    {
-    }
-
     public virtual void OnStart()
     {
     }
@@ -19,10 +13,6 @@ public abstract class UpdateSystem : IUpdateSystem
     }
 
     public virtual void OnDestroy()
-    {
-    }
-
-    public virtual void Dispose()
     {
     }
 }
