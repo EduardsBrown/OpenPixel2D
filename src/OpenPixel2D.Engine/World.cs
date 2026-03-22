@@ -98,6 +98,58 @@ public sealed class World : IDisposable
         entity.DetachFromOwner();
     }
 
+    public void AddSystem(UpdateSystem? system)
+    {
+        if (system == null)
+        {
+            return;
+        }
+
+        if (system.World == this && _updateSysRegistry.Items.Contains(system))
+        {
+            return;
+        }
+
+        system.World?.DetachUpdateSystem(system);
+        AttachUpdateSystem(system);
+    }
+
+    public void RemoveSystem(UpdateSystem? system)
+    {
+        if (system == null || system.World != this)
+        {
+            return;
+        }
+
+        DetachUpdateSystem(system);
+    }
+
+    public void AddSystem(RenderSystem? system)
+    {
+        if (system == null)
+        {
+            return;
+        }
+
+        if (system.World == this && _renderSysRegistry.Items.Contains(system))
+        {
+            return;
+        }
+
+        system.World?.DetachRenderSystem(system);
+        AttachRenderSystem(system);
+    }
+
+    public void RemoveSystem(RenderSystem? system)
+    {
+        if (system == null || system.World != this)
+        {
+            return;
+        }
+
+        DetachRenderSystem(system);
+    }
+
     internal void RegisterComponent(Component component)
     {
         _componentRegistry.Add(component);
@@ -150,5 +202,47 @@ public sealed class World : IDisposable
     {
         _entities.Remove(entity);
         entity.SetParent(null);
+    }
+
+    private void AttachUpdateSystem(UpdateSystem system)
+    {
+        _updateSysRegistry.Add(system);
+        system.SetWorld(this);
+    }
+
+    private void DetachUpdateSystem(UpdateSystem system)
+    {
+        if (!_updateSysRegistry.Items.Contains(system))
+        {
+            return;
+        }
+
+        _updateSysRegistry.Remove(system);
+
+        if (system.World == this)
+        {
+            system.SetWorld(null);
+        }
+    }
+
+    private void AttachRenderSystem(RenderSystem system)
+    {
+        _renderSysRegistry.Add(system);
+        system.SetWorld(this);
+    }
+
+    private void DetachRenderSystem(RenderSystem system)
+    {
+        if (!_renderSysRegistry.Items.Contains(system))
+        {
+            return;
+        }
+
+        _renderSysRegistry.Remove(system);
+
+        if (system.World == this)
+        {
+            system.SetWorld(null);
+        }
     }
 }
