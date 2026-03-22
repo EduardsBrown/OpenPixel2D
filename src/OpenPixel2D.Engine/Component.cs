@@ -10,7 +10,7 @@ public abstract class Component : IComponent
     [JsonIgnore]
     public Entity? Parent { get; private set; }
 
-    internal void SetParent(Entity parent) => Parent = parent;
+    internal void SetParent(Entity? parent) => Parent = parent;
 
     public virtual void Initialize()
     {

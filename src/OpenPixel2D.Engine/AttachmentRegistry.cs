@@ -7,10 +7,36 @@ internal sealed class AttachmentRegistry<T> where T : class
     private readonly List<T> _pendingRemove = [];
 
     public IReadOnlyList<T> Items => _items;
-
-    public bool Contains(T item)
+    
+    public void Add(T item)
     {
-        return _items.Contains(item);
+        if (_pendingRemove.Remove(item))
+        {
+            return;
+        }
+
+        if (_items.Contains(item))
+        {
+            return;
+        }
+
+        _pendingAdd.Remove(item);
+        _items.Add(item);
+    }
+
+    public void Remove(T item)
+    {
+        if (_pendingAdd.Remove(item))
+        {
+            return;
+        }
+
+        if (!_items.Remove(item))
+        {
+            return;
+        }
+
+        _pendingRemove.Remove(item);
     }
 
     public void QueueAdd(T item)
