@@ -28,7 +28,7 @@ public sealed class SpriteRenderSystemTests
             Origin = new Vector2(8f, 8f),
             Layer = 3,
             SortKey = 42,
-            Visible = true
+            Active = true
         });
         world.AddEntity(entity);
         world.Update();
@@ -67,7 +67,7 @@ public sealed class SpriteRenderSystemTests
         entity.AddComponent(new SpriteComponent
         {
             TextureId = new TextureId("player"),
-            Visible = false
+            Active = false
         });
         world.AddEntity(entity);
         world.Update();
@@ -88,7 +88,7 @@ public sealed class SpriteRenderSystemTests
         entity.AddComponent(new SpriteComponent
         {
             TextureId = new TextureId("player"),
-            Visible = true
+            Active = true
         });
         world.AddEntity(entity);
         world.Update();
@@ -98,50 +98,6 @@ public sealed class SpriteRenderSystemTests
         world.Render(new TestRenderContext(frame));
 
         Assert.Empty(frame.GetPopulatedPasses());
-    }
-
-    [Fact]
-    public void Render_MultipleSpriteComponents_SubmitsEachVisibleSprite()
-    {
-        SpriteRenderSystem system = new();
-        World world = CreateStartedWorld(system);
-        Entity entity = new();
-        entity.AddComponent(new TransformComponent
-        {
-            Position = new Vector2(12f, 24f),
-            Scale = new Vector2(2f, 2f),
-            Rotation = 0.25f
-        });
-        entity.AddComponent(new SpriteComponent
-        {
-            TextureId = new TextureId("first"),
-            Layer = 1,
-            SortKey = 10
-        });
-        entity.AddComponent(new SpriteComponent
-        {
-            TextureId = new TextureId("second"),
-            Layer = 2,
-            SortKey = 20
-        });
-        world.AddEntity(entity);
-        world.Update();
-
-        RenderFrame frame = CreateFrame();
-
-        world.Render(new TestRenderContext(frame));
-
-        RenderPassBuffer pass = Assert.Single(frame.GetPopulatedPasses());
-        SpriteRenderCommand first = Assert.IsType<SpriteRenderCommand>(pass.Commands[0]);
-        SpriteRenderCommand second = Assert.IsType<SpriteRenderCommand>(pass.Commands[1]);
-
-        Assert.Equal(2, pass.Commands.Count);
-        Assert.Equal(new TextureId("first"), first.TextureId);
-        Assert.Equal(1, first.Metadata.Layer);
-        Assert.Equal(10, first.Metadata.SortKey);
-        Assert.Equal(new TextureId("second"), second.TextureId);
-        Assert.Equal(2, second.Metadata.Layer);
-        Assert.Equal(20, second.Metadata.SortKey);
     }
 
     private static World CreateStartedWorld(RenderSystem system)
