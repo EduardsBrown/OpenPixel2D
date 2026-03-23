@@ -23,25 +23,21 @@ public sealed class SpriteRenderSystem : RenderSystem
                 continue;
             }
 
-            foreach (SpriteComponent sprite in entity.GetComponents<SpriteComponent>())
+            if (!entity.TryGetComponent(out SpriteComponent? sprite) || !sprite.Active)
             {
-                if (!sprite.Visible)
-                {
-                    continue;
-                }
-
-                IRenderPassWriter passWriter = pass ??= renderContext.Frame.GetPass(RenderPassNames.WorldSprites);
-
-                passWriter.Submit(new SpriteRenderCommand(
-                    new RenderCommandMetadata(sprite.Layer, sprite.SortKey, RenderSpace.World),
-                    sprite.TextureId,
-                    transform.Position,
-                    transform.Scale,
-                    transform.Rotation,
-                    sprite.Origin,
-                    sprite.SourceRectangle,
-                    sprite.Colour));
+                continue;
             }
+
+            pass = renderContext.Frame.GetPass(RenderPassNames.WorldSprites);
+            pass.Submit(new SpriteRenderCommand(
+                new RenderCommandMetadata(sprite.Layer, sprite.SortKey, RenderSpace.World),
+                sprite.TextureId,
+                transform.Position,
+                transform.Scale,
+                transform.Rotation,
+                sprite.Origin,
+                sprite.SourceRectangle,
+                sprite.Colour));
         }
     }
 }

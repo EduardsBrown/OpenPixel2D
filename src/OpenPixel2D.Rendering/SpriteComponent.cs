@@ -18,6 +18,4 @@ public class SpriteComponent : Component
     public int Layer { get; set; }
 
     public long SortKey { get; set; }
-
-    public bool Visible { get; set; } = true;
 }
