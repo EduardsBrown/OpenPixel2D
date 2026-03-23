@@ -1,5 +1,6 @@
 using OpenPixel2D.Abstractions;
 using OpenPixel2D.Engine;
+using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Engine.Tests;
 
@@ -91,7 +92,7 @@ public sealed class WorldLifecycleTests
         Assert.Empty(world.UpdateSystems);
         Assert.Empty(world.RenderSystems);
 
-        world.Render();
+        world.Render(null);
 
         Assert.Empty(log);
 
@@ -110,7 +111,7 @@ public sealed class WorldLifecycleTests
             ],
             log);
 
-        world.Render();
+        world.Render(null);
 
         Assert.Equal(
             [
@@ -153,7 +154,7 @@ public sealed class WorldLifecycleTests
         world.Start();
 
         world.Update();
-        world.Render();
+        world.Render(null);
 
         Assert.Empty(spawnedLog);
 
@@ -172,7 +173,7 @@ public sealed class WorldLifecycleTests
             ],
             spawnedLog);
 
-        world.Render();
+        world.Render(null);
 
         Assert.Equal(
             [
@@ -211,12 +212,12 @@ public sealed class WorldLifecycleTests
         world.RemoveSystem(updateSystem);
         world.RemoveSystem(renderSystem);
 
-        world.Render();
+        world.Render(null);
 
         Assert.Equal(["render.Render"], log);
 
         world.Update();
-        world.Render();
+        world.Render(null);
 
         Assert.Equal(
             [
@@ -282,7 +283,7 @@ public sealed class WorldLifecycleTests
         world.RemoveSystem(renderSystem);
 
         world.Update();
-        world.Render();
+        world.Render(null);
 
         Assert.Empty(log);
     }
@@ -326,7 +327,7 @@ public sealed class WorldLifecycleTests
 
         Assert.Throws<InvalidOperationException>(() => world.Start());
         Assert.Throws<InvalidOperationException>(() => world.Update());
-        Assert.Throws<InvalidOperationException>(() => world.Render());
+        Assert.Throws<InvalidOperationException>(() => world.Render(null));
         Assert.Throws<InvalidOperationException>(() => world.Destroy());
 
         world.Initialize();
@@ -415,7 +416,7 @@ public sealed class WorldLifecycleTests
         secondWorld.Initialize();
         secondWorld.Start();
         secondWorld.Update();
-        secondWorld.Render();
+        secondWorld.Render(null);
 
         Assert.Empty(teardownLog);
         Assert.Empty(secondWorld.RegisteredComponents);
@@ -562,7 +563,7 @@ public sealed class WorldLifecycleTests
             _log.Add($"{_name}.OnStart");
         }
 
-        public override void Render()
+        public override void Render(IRenderContext context)
         {
             _log.Add($"{_name}.Render");
         }

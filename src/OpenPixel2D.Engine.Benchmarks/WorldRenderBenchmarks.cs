@@ -52,18 +52,18 @@ public class WorldRenderBenchmarks
     [Benchmark(Baseline = true)]
     public void Render_RenderSystemsOnly()
     {
-        _world.Render();
+        _world.Render(null);
     }
 
     [Benchmark]
     public void Render_RuntimeActivatedSystems()
     {
-        _world.Render();
+        _world.Render(null);
     }
 
     [Benchmark]
     public void Render_MixedSteadyState()
     {
-        _world.Render();
+        _world.Render(null);
     }
 }

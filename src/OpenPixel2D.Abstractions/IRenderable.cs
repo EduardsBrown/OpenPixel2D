@@ -1,6 +1,8 @@
-﻿namespace OpenPixel2D.Abstractions;
+﻿using OpenPixel2D.Rendering.Abstractions;
+
+namespace OpenPixel2D.Abstractions;
 
 public interface IRenderable
 {
-    void Render();
+    void Render(IRenderContext context);
 }

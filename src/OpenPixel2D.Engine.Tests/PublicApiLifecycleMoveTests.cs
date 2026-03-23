@@ -294,7 +294,7 @@ public sealed class PublicApiLifecycleMoveTests
         Assert.Same(root, child.Parent);
         Assert.Empty(recorder.Events);
 
-        world.Render();
+        world.Render(null);
         Assert.Empty(recorder.Events);
 
         world.Update();

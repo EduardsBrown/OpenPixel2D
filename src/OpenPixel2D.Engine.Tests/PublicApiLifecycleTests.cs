@@ -107,7 +107,7 @@ public sealed class PublicApiLifecycleTests
 
         world.Initialize();
         world.Start();
-        world.Render();
+        world.Render(null);
         world.Destroy();
         world.Dispose();
 
@@ -221,7 +221,7 @@ public sealed class PublicApiLifecycleTests
         Assert.Empty(recorder.Events);
 
         world.Start();
-        world.Render();
+        world.Render(null);
         world.Destroy();
         world.Dispose();
 
@@ -249,7 +249,7 @@ public sealed class PublicApiLifecycleTests
 
         Assert.Empty(recorder.Events);
 
-        world.Render();
+        world.Render(null);
         Assert.Empty(recorder.Events);
 
         world.Update();
@@ -292,7 +292,7 @@ public sealed class PublicApiLifecycleTests
 
         Assert.Empty(recorder.Events);
 
-        world.Render();
+        world.Render(null);
         Assert.Empty(recorder.Events);
 
         world.Update();
@@ -319,7 +319,7 @@ public sealed class PublicApiLifecycleTests
 
         Assert.Empty(recorder.Events);
 
-        world.Render();
+        world.Render(null);
         Assert.Empty(recorder.Events);
 
         world.Update();
@@ -359,7 +359,7 @@ public sealed class PublicApiLifecycleTests
 
         Assert.Empty(recorder.Events);
 
-        world.Render();
+        world.Render(null);
         Assert.Empty(recorder.Events);
 
         world.Update();
@@ -370,8 +370,8 @@ public sealed class PublicApiLifecycleTests
             ],
             recorder.Events);
 
-        world.Render();
-        world.Render();
+        world.Render(null);
+        world.Render(null);
         world.Destroy();
         world.Dispose();
 
@@ -412,7 +412,7 @@ public sealed class PublicApiLifecycleTests
 
         world.AddSystem(spawner);
         world.Update();
-        world.Render();
+        world.Render(null);
 
         Assert.Empty(spawnedRecorder.Events);
 
@@ -431,7 +431,7 @@ public sealed class PublicApiLifecycleTests
             ],
             spawnedRecorder.Events);
 
-        world.Render();
+        world.Render(null);
         world.Destroy();
         world.Dispose();
 
@@ -532,9 +532,9 @@ public sealed class PublicApiLifecycleTests
 
         Assert.Empty(recorder.Events);
 
-        world.Render();
+        world.Render(null);
         world.Update();
-        world.Render();
+        world.Render(null);
         world.Destroy();
         world.Dispose();
 
@@ -600,7 +600,7 @@ public sealed class PublicApiLifecycleTests
         world.RemoveSystem(renderSystem);
 
         world.Update();
-        world.Render();
+        world.Render(null);
         world.Destroy();
         world.Dispose();
 
@@ -623,7 +623,7 @@ public sealed class PublicApiLifecycleTests
         world.AddSystem(renderSystem);
 
         world.Update();
-        world.Render();
+        world.Render(null);
         world.Destroy();
         world.Dispose();
 
@@ -676,7 +676,7 @@ public sealed class PublicApiLifecycleTests
         world.Initialize();
         world.Start();
         world.Update();
-        world.Render();
+        world.Render(null);
         world.Destroy();
         world.Dispose();
 
@@ -724,9 +724,9 @@ public sealed class PublicApiLifecycleTests
 
         Assert.Empty(recorder.Events);
 
-        world.Render();
+        world.Render(null);
         world.Update();
-        world.Render();
+        world.Render(null);
         world.Destroy();
         world.Dispose();
 
@@ -759,8 +759,8 @@ public sealed class PublicApiLifecycleTests
         world.Start();
         world.Update();
         world.Update();
-        world.Render();
-        world.Render();
+        world.Render(null);
+        world.Render(null);
         world.Destroy();
         world.Dispose();
 
@@ -788,7 +788,7 @@ public sealed class PublicApiLifecycleTests
 
         Assert.Throws<InvalidOperationException>(() => createdWorld.Start());
         Assert.Throws<InvalidOperationException>(() => createdWorld.Update());
-        Assert.Throws<InvalidOperationException>(() => createdWorld.Render());
+        Assert.Throws<InvalidOperationException>(() => createdWorld.Render(null));
         Assert.Throws<InvalidOperationException>(() => createdWorld.Destroy());
 
         World initializedWorld = new();
@@ -796,7 +796,7 @@ public sealed class PublicApiLifecycleTests
 
         Assert.Throws<InvalidOperationException>(() => initializedWorld.Initialize());
         Assert.Throws<InvalidOperationException>(() => initializedWorld.Update());
-        Assert.Throws<InvalidOperationException>(() => initializedWorld.Render());
+        Assert.Throws<InvalidOperationException>(() => initializedWorld.Render(null));
         Assert.Throws<InvalidOperationException>(() => initializedWorld.Destroy());
 
         initializedWorld.Dispose();

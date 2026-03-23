@@ -1,5 +1,6 @@
 using OpenPixel2D.Abstractions;
 using OpenPixel2D.Engine;
+using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Engine.Tests;
 
@@ -222,7 +223,7 @@ internal sealed class RecordingRenderSystem : RenderSystem
         _onStart?.Invoke();
     }
 
-    public override void Render()
+    public override void Render(IRenderContext context)
     {
         _recorder.Record(_name, nameof(Render));
         _onRender?.Invoke();

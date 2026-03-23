@@ -24,6 +24,6 @@ public class WorldRenderEmptyBenchmarks
     [Benchmark(Baseline = true)]
     public void Render_EmptyWorld()
     {
-        _world.Render();
+        _world.Render(null);
     }
 }

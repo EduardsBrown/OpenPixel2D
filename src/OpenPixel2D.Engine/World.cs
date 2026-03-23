@@ -1,4 +1,5 @@
 using OpenPixel2D.Abstractions;
+using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Engine;
 
@@ -60,7 +61,7 @@ public sealed class World : IDisposable
         UpdateSystemsByGroup(SystemGroup.PostPhysics);
     }
 
-    public void Render()
+    public void Render(IRenderContext context)
     {
         EnsureState(WorldState.Started, nameof(Render));
 
@@ -73,7 +74,7 @@ public sealed class World : IDisposable
                 continue;
             }
 
-            system.Render();
+            system.Render(context);
         }
     }
 

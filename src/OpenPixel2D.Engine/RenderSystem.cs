@@ -1,4 +1,5 @@
 ﻿using OpenPixel2D.Abstractions;
+using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Engine;
 
@@ -21,7 +22,7 @@ public abstract class RenderSystem : IRenderSystem
     {
     }
 
-    public virtual void Render()
+    public virtual void Render(IRenderContext context)
     {
     }
 
