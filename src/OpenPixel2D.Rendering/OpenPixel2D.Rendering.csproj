@@ -8,7 +8,10 @@
 
     <ItemGroup>
       <ProjectReference Include="..\OpenPixel2D.Abstractions\OpenPixel2D.Abstractions.csproj" />
+      <ProjectReference Include="..\OpenPixel2D.Components\OpenPixel2D.Components.csproj" />
       <ProjectReference Include="..\OpenPixel2D.Engine\OpenPixel2D.Engine.csproj" />
+      <ProjectReference Include="..\OpenPixel2D.Engine.Extensions\OpenPixel2D.Engine.Extensions.csproj" />
+      <ProjectReference Include="..\OpenPixel2D.Rendering.Abstractions\OpenPixel2D.Rendering.Abstractions.csproj" />
     </ItemGroup>
 
 </Project>

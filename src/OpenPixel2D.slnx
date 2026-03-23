@@ -7,4 +7,5 @@
   <Project Path="OpenPixel2D.Engine.Tests/OpenPixel2D.Engine.Tests.csproj" />
   <Project Path="OpenPixel2D.Rendering.Abstractions/OpenPixel2D.Rendering.Abstractions.csproj" />
   <Project Path="OpenPixel2D.Rendering/OpenPixel2D.Rendering.csproj" />
+  <Project Path="OpenPixel2D.Rendering.Tests/OpenPixel2D.Rendering.Tests.csproj" />
 </Solution>
