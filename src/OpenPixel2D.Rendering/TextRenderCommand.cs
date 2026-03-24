@@ -1,15 +1,13 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Numerics;
 using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering;
 
-internal readonly record struct SpriteRenderCommand(
+internal readonly record struct TextRenderCommand(
     RenderCommandMetadata Metadata,
-    TextureId TextureId,
+    FontId FontId,
+    string Text,
     Vector2 Position,
-    Vector2 Scale,
-    float Rotation,
-    float Width,
-    float Height,
+    float Size,
     Color Colour) : IRenderCommand;

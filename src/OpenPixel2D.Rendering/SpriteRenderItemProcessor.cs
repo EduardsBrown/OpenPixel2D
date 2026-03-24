@@ -13,26 +13,54 @@ internal sealed class SpriteRenderItemProcessor : IRenderItemProcessor<SpriteRen
             return;
         }
 
-        IRenderPassWriter pass = context.Frame.GetPass(RenderPassNames.WorldSprites);
+        BuiltInRenderPassRoute route = BuiltInRenderPassRouting.Sprite;
+        IRenderPassWriter pass = context.Frame.GetPass(route.PassName);
+        IndexedSpriteRenderItem[] sortedItems = CreateSortedItems(items);
 
-        for (int i = 0; i < items.Length; i++)
+        for (int i = 0; i < sortedItems.Length; i++)
         {
-            SpriteRenderItem item = items[i];
+            SpriteRenderItem item = sortedItems[i].Item;
 
             pass.Submit(new SpriteRenderCommand(
-                new RenderCommandMetadata(item.Layer, item.SortKey, RenderSpace.World),
+                new RenderCommandMetadata(Layer: 0, SortKey: i, Space: route.Space),
                 ToTextureId(item.Asset),
                 item.Position,
                 item.Scale,
                 item.Rotation,
-                item.Origin,
-                item.SourceRectangle,
+                item.Width,
+                item.Height,
                 item.Colour));
         }
+    }
+
+    private static IndexedSpriteRenderItem[] CreateSortedItems(ReadOnlySpan<SpriteRenderItem> items)
+    {
+        IndexedSpriteRenderItem[] sortedItems = new IndexedSpriteRenderItem[items.Length];
+
+        for (int i = 0; i < items.Length; i++)
+        {
+            sortedItems[i] = new IndexedSpriteRenderItem(items[i], i);
+        }
+
+        Array.Sort(sortedItems, static (left, right) =>
+        {
+            int result = left.Item.Position.Y.CompareTo(right.Item.Position.Y);
+
+            if (result != 0)
+            {
+                return result;
+            }
+
+            return left.SubmissionIndex.CompareTo(right.SubmissionIndex);
+        });
+
+        return sortedItems;
     }
 
     private static TextureId ToTextureId(AssetId asset)
     {
         return asset.Value is null ? default : new TextureId(asset.Value);
     }
+
+    private readonly record struct IndexedSpriteRenderItem(SpriteRenderItem Item, int SubmissionIndex);
 }

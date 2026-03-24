@@ -31,10 +31,7 @@ public sealed class SpriteRenderSystem : RenderSystem
                 continue;
             }
 
-            float width = ResolveDimension(sprite.Width, sprite.SourceRectangle?.Width);
-            float height = ResolveDimension(sprite.Height, sprite.SourceRectangle?.Height);
-
-            if (width <= 0f || height <= 0f)
+            if (sprite.Width <= 0f || sprite.Height <= 0f)
             {
                 continue;
             }
@@ -44,23 +41,9 @@ public sealed class SpriteRenderSystem : RenderSystem
                 transform.Position,
                 transform.Scale,
                 transform.Rotation,
-                width,
-                height,
-                sprite.Colour,
-                sprite.Layer,
-                sprite.SortKey,
-                sprite.Origin,
-                sprite.SourceRectangle));
+                sprite.Width,
+                sprite.Height,
+                sprite.Colour));
         }
-    }
-
-    private static float ResolveDimension(float value, float? fallback)
-    {
-        if (value != 0f)
-        {
-            return value;
-        }
-
-        return fallback ?? 0f;
     }
 }

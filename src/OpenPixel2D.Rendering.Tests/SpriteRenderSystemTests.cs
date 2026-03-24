@@ -9,7 +9,19 @@ namespace OpenPixel2D.Rendering.Tests;
 public sealed class SpriteRenderSystemTests
 {
     [Fact]
-    public void Render_VisibleSpriteWithTransform_SubmitsSpriteRenderItem()
+    public void SpriteComponent_Defaults_AreSimpleAndAuthorFriendly()
+    {
+        SpriteComponent sprite = new();
+
+        Assert.Equal(default, sprite.Asset);
+        Assert.Equal(1f, sprite.Width);
+        Assert.Equal(1f, sprite.Height);
+        Assert.Equal(Color.White, sprite.Colour);
+        Assert.True(sprite.Active);
+    }
+
+    [Fact]
+    public void Render_VisibleSpriteWithSimplifiedData_SubmitsSpriteRenderItem()
     {
         SpriteRenderSystem system = new();
         World world = CreateStartedWorld(system);
@@ -17,18 +29,15 @@ public sealed class SpriteRenderSystemTests
         entity.AddComponent(new TransformComponent
         {
             Position = new Vector2(32f, 48f),
-            Scale = new Vector2(1f, 1f),
+            Scale = new Vector2(1.5f, 2f),
             Rotation = 0.5f
         });
         entity.AddComponent(new SpriteComponent
         {
-            TextureId = new TextureId("player"),
-            SourceRectangle = new RectangleF(1f, 2f, 16f, 16f),
-            Colour = Color.Crimson,
-            Origin = new Vector2(8f, 8f),
-            Layer = 3,
-            SortKey = 42,
-            Active = true
+            Asset = new AssetId("player"),
+            Width = 16f,
+            Height = 24f,
+            Colour = Color.Crimson
         });
         world.AddEntity(entity);
         world.Update();
@@ -43,20 +52,16 @@ public sealed class SpriteRenderSystemTests
         Assert.Equal(1, items.Length);
         Assert.Equal(new AssetId("player"), items[0].Asset);
         Assert.Equal(new Vector2(32f, 48f), items[0].Position);
-        Assert.Equal(new Vector2(1f, 1f), items[0].Scale);
+        Assert.Equal(new Vector2(1.5f, 2f), items[0].Scale);
         Assert.Equal(0.5f, items[0].Rotation);
         Assert.Equal(16f, items[0].Width);
-        Assert.Equal(16f, items[0].Height);
+        Assert.Equal(24f, items[0].Height);
         Assert.Equal(Color.Crimson, items[0].Colour);
-        Assert.Equal(3, items[0].Layer);
-        Assert.Equal(42, items[0].SortKey);
-        Assert.Equal(new Vector2(8f, 8f), items[0].Origin);
-        Assert.Equal(new RectangleF(1f, 2f, 16f, 16f), items[0].SourceRectangle);
         Assert.Empty(frame.GetPopulatedPasses());
     }
 
     [Fact]
-    public void Render_InvisibleSprite_SubmitsNothing()
+    public void Render_SpriteWithDefaults_SubmitsDefaultDimensionsAndColour()
     {
         SpriteRenderSystem system = new();
         World world = CreateStartedWorld(system);
@@ -64,11 +69,40 @@ public sealed class SpriteRenderSystemTests
         entity.AddComponent(new TransformComponent
         {
             Position = new Vector2(10f, 20f),
-            Scale = new Vector2(1f, 1f)
+            Scale = Vector2.One
         });
         entity.AddComponent(new SpriteComponent
         {
-            TextureId = new TextureId("player"),
+            Asset = new AssetId("player")
+        });
+        world.AddEntity(entity);
+        world.Update();
+
+        RenderQueue queue = new();
+
+        world.Render(new RenderPipelineContext(CreateFrame(), queue));
+
+        SpriteRenderItem item = Assert.Single(queue.GetItems<SpriteRenderItem>().ToArray());
+
+        Assert.Equal(1f, item.Width);
+        Assert.Equal(1f, item.Height);
+        Assert.Equal(Color.White, item.Colour);
+    }
+
+    [Fact]
+    public void Render_InactiveSprite_SubmitsNothing()
+    {
+        SpriteRenderSystem system = new();
+        World world = CreateStartedWorld(system);
+        Entity entity = new();
+        entity.AddComponent(new TransformComponent
+        {
+            Position = new Vector2(10f, 20f),
+            Scale = Vector2.One
+        });
+        entity.AddComponent(new SpriteComponent
+        {
+            Asset = new AssetId("player"),
             Width = 16f,
             Height = 16f,
             Active = false
@@ -93,10 +127,9 @@ public sealed class SpriteRenderSystemTests
         Entity entity = new();
         entity.AddComponent(new SpriteComponent
         {
-            TextureId = new TextureId("player"),
+            Asset = new AssetId("player"),
             Width = 16f,
-            Height = 16f,
-            Active = true
+            Height = 16f
         });
         world.AddEntity(entity);
         world.Update();
@@ -119,14 +152,13 @@ public sealed class SpriteRenderSystemTests
         entity.AddComponent(new TransformComponent
         {
             Position = new Vector2(10f, 20f),
-            Scale = new Vector2(1f, 1f)
+            Scale = Vector2.One
         });
         entity.AddComponent(new SpriteComponent
         {
             Asset = new AssetId("player"),
             Width = -1f,
-            Height = 16f,
-            Active = true
+            Height = 16f
         });
         world.AddEntity(entity);
         world.Update();

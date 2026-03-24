@@ -4,13 +4,13 @@ using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering;
 
-public class SpriteComponent : Component
+public sealed class TextComponent : Component
 {
     public AssetId Asset { get; set; }
 
-    public float Width { get; set; } = 1f;
-
-    public float Height { get; set; } = 1f;
+    public string Text { get; set; } = string.Empty;
 
     public Color Colour { get; set; } = Color.White;
+
+    public float Size { get; set; } = 1f;
 }

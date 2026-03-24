@@ -28,6 +28,7 @@ internal sealed class RenderProcessorRegistry
     {
         RenderProcessorRegistry registry = new();
         registry.Register(new SpriteRenderItemProcessor());
+        registry.Register(new TextRenderItemProcessor());
         return registry;
     }
 

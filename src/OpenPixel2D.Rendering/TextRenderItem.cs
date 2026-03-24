@@ -4,11 +4,9 @@ using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering;
 
-internal readonly record struct SpriteRenderItem(
+internal readonly record struct TextRenderItem(
     AssetId Asset,
+    string Text,
     Vector2 Position,
-    Vector2 Scale,
-    float Rotation,
-    float Width,
-    float Height,
+    float Size,
     Color Colour) : IRenderItem;

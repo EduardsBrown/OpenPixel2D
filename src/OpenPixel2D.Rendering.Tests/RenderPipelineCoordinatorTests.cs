@@ -33,14 +33,13 @@ public sealed class RenderPipelineCoordinatorTests
         TransformComponent transform = new()
         {
             Position = new Vector2(10f, 20f),
-            Scale = new Vector2(1f, 1f)
+            Scale = Vector2.One
         };
         SpriteComponent sprite = new()
         {
-            TextureId = new TextureId("player"),
+            Asset = new AssetId("player"),
             Width = 16f,
-            Height = 16f,
-            Active = true
+            Height = 16f
         };
         entity.AddComponent(transform);
         entity.AddComponent(sprite);
@@ -61,53 +60,79 @@ public sealed class RenderPipelineCoordinatorTests
     }
 
     [Fact]
-    public void BuildFrame_WorldWithSpriteRenderSystem_ProducesSpriteCommands()
+    public void BuildFrame_WorldWithSpriteAndTextSystems_ProducesBuiltInPassesInRegistryOrder()
     {
-        SpriteRenderSystem system = new();
-        World world = CreateStartedWorld(system);
-        Entity entity = new();
-        entity.AddComponent(new TransformComponent
+        World world = CreateStartedWorld(new SpriteRenderSystem(), new TextRenderSystem());
+
+        Entity spriteEntity = new();
+        spriteEntity.AddComponent(new TransformComponent
         {
             Position = new Vector2(32f, 48f),
             Scale = new Vector2(1f, 2f),
             Rotation = 0.5f
         });
-        entity.AddComponent(new SpriteComponent
+        spriteEntity.AddComponent(new SpriteComponent
         {
-            TextureId = new TextureId("player"),
-            SourceRectangle = new RectangleF(1f, 2f, 16f, 16f),
-            Colour = Color.Crimson,
-            Origin = new Vector2(8f, 8f),
-            Layer = 3,
-            SortKey = 42,
-            Active = true
+            Asset = new AssetId("player"),
+            Width = 16f,
+            Height = 24f,
+            Colour = Color.Crimson
         });
-        world.AddEntity(entity);
+        world.AddEntity(spriteEntity);
+
+        Entity textEntity = new();
+        textEntity.AddComponent(new TransformComponent
+        {
+            Position = new Vector2(5f, 6f)
+        });
+        textEntity.AddComponent(new TextComponent
+        {
+            Asset = new AssetId("ui-font"),
+            Text = "Hello",
+            Size = 18f,
+            Colour = Color.Gold
+        });
+        world.AddEntity(textEntity);
+
         world.Update();
 
         RenderPipelineCoordinator coordinator = new();
 
         RenderFrame frame = coordinator.BuildFrame(world);
-        RenderPassBuffer pass = Assert.Single(frame.GetPopulatedPasses());
-        SpriteRenderCommand command = Assert.IsType<SpriteRenderCommand>(Assert.Single(pass.Commands));
+        RenderPassBuffer[] passes = frame.GetPopulatedPasses().ToArray();
 
-        Assert.Equal(RenderPassNames.WorldSprites, pass.Descriptor.Name);
-        Assert.Equal(new TextureId("player"), command.TextureId);
-        Assert.Equal(new Vector2(32f, 48f), command.Position);
-        Assert.Equal(new Vector2(1f, 2f), command.Scale);
-        Assert.Equal(0.5f, command.Rotation);
-        Assert.Equal(new Vector2(8f, 8f), command.Origin);
-        Assert.Equal(new RectangleF(1f, 2f, 16f, 16f), command.SourceRectangle);
-        Assert.Equal(Color.Crimson, command.Colour);
-        Assert.Equal(3, command.Metadata.Layer);
-        Assert.Equal(42, command.Metadata.SortKey);
-        Assert.Equal(RenderSpace.World, command.Metadata.Space);
+        Assert.Equal(2, passes.Length);
+        Assert.Equal(RenderPassNames.WorldSprites, passes[0].Descriptor.Name);
+        Assert.Equal(RenderPassNames.UI, passes[1].Descriptor.Name);
+
+        SpriteRenderCommand spriteCommand = Assert.IsType<SpriteRenderCommand>(Assert.Single(passes[0].Commands));
+        Assert.Equal(new TextureId("player"), spriteCommand.TextureId);
+        Assert.Equal(new Vector2(32f, 48f), spriteCommand.Position);
+        Assert.Equal(new Vector2(1f, 2f), spriteCommand.Scale);
+        Assert.Equal(0.5f, spriteCommand.Rotation);
+        Assert.Equal(16f, spriteCommand.Width);
+        Assert.Equal(24f, spriteCommand.Height);
+        Assert.Equal(Color.Crimson, spriteCommand.Colour);
+        Assert.Equal(RenderSpace.World, spriteCommand.Metadata.Space);
+
+        TextRenderCommand textCommand = Assert.IsType<TextRenderCommand>(Assert.Single(passes[1].Commands));
+        Assert.Equal(new FontId("ui-font"), textCommand.FontId);
+        Assert.Equal("Hello", textCommand.Text);
+        Assert.Equal(new Vector2(5f, 6f), textCommand.Position);
+        Assert.Equal(18f, textCommand.Size);
+        Assert.Equal(Color.Gold, textCommand.Colour);
+        Assert.Equal(RenderSpace.Screen, textCommand.Metadata.Space);
     }
 
-    private static World CreateStartedWorld(RenderSystem system)
+    private static World CreateStartedWorld(params RenderSystem[] systems)
     {
         World world = new();
-        world.AddSystem(system);
+
+        for (int i = 0; i < systems.Length; i++)
+        {
+            world.AddSystem(systems[i]);
+        }
+
         world.Initialize();
         world.Start();
         return world;

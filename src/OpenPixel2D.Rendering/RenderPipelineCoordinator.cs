@@ -32,6 +32,7 @@ internal sealed class RenderPipelineCoordinator
 
         _frame.Clear();
         _queue.Clear();
+        _context.SetView(null);
 
         world.Render(_context);
         _processors.Process(_queue, _context);

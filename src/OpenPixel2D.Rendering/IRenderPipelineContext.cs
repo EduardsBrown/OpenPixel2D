@@ -5,4 +5,6 @@ namespace OpenPixel2D.Rendering;
 internal interface IRenderPipelineContext
 {
     IRenderFrame Frame { get; }
+
+    RenderView? View { get; }
 }
