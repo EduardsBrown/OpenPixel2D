@@ -2,6 +2,10 @@ using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering;
 
+/// <summary>
+/// Ordered processor registration and execution mechanics. Default built-in composition is defined separately
+/// so future public registration can reuse the same registry behavior.
+/// </summary>
 internal sealed class RenderProcessorRegistry
 {
     private readonly List<IRenderProcessorInvoker> _processors = [];
@@ -22,14 +26,6 @@ internal sealed class RenderProcessorRegistry
         {
             _processors[i].Process(queue, context);
         }
-    }
-
-    internal static RenderProcessorRegistry CreateDefault()
-    {
-        RenderProcessorRegistry registry = new();
-        registry.Register(new SpriteRenderItemProcessor());
-        registry.Register(new TextRenderItemProcessor());
-        return registry;
     }
 
     private interface IRenderProcessorInvoker

@@ -7,12 +7,15 @@ namespace OpenPixel2D.Rendering.Tests;
 public sealed class SpriteRenderItemProcessorTests
 {
     [Fact]
-    public void Process_SpriteItems_PopulatesWorldSpritesPassWithSimplifiedCommands()
+    public void Process_SpriteItems_UsesAssetResolverAndPopulatesWorldSpritesPassWithSimplifiedCommands()
     {
         RenderPassRegistry registry = new();
         registry.RegisterDefaultPasses();
         RenderFrame frame = new(registry);
         RenderQueue queue = new();
+        RecordingAssetResolver resolver = new(
+            textureResult: new TextureId("resolved-player"),
+            fontResult: default);
         queue.Submit(new SpriteRenderItem(
             new AssetId("player"),
             new Vector2(32f, 48f),
@@ -22,7 +25,7 @@ public sealed class SpriteRenderItemProcessorTests
             24f,
             Color.Crimson));
 
-        SpriteRenderItemProcessor processor = new();
+        SpriteRenderItemProcessor processor = new(resolver);
 
         processor.Process(queue.GetItems<SpriteRenderItem>(), new RenderPipelineContext(frame, queue));
 
@@ -30,7 +33,9 @@ public sealed class SpriteRenderItemProcessorTests
         SpriteRenderCommand command = Assert.IsType<SpriteRenderCommand>(Assert.Single(pass.Commands));
 
         Assert.Equal(RenderPassNames.WorldSprites, pass.Descriptor.Name);
-        Assert.Equal(new TextureId("player"), command.TextureId);
+        Assert.Equal([new AssetId("player")], resolver.TextureRequests);
+        Assert.Empty(resolver.FontRequests);
+        Assert.Equal(new TextureId("resolved-player"), command.TextureId);
         Assert.Equal(new Vector2(32f, 48f), command.Position);
         Assert.Equal(new Vector2(1.5f, 2f), command.Scale);
         Assert.Equal(0.5f, command.Rotation);
@@ -74,7 +79,7 @@ public sealed class SpriteRenderItemProcessorTests
             8f,
             Color.Blue));
 
-        SpriteRenderItemProcessor processor = new();
+        SpriteRenderItemProcessor processor = new(new PassthroughRenderAssetResolver());
 
         processor.Process(queue.GetItems<SpriteRenderItem>(), new RenderPipelineContext(frame, queue));
 
@@ -100,5 +105,33 @@ public sealed class SpriteRenderItemProcessorTests
                 Assert.Equal(new TextureId("third"), spriteCommand.TextureId);
                 Assert.Equal(2L, spriteCommand.Metadata.SortKey);
             });
+    }
+
+    private sealed class RecordingAssetResolver : IRenderAssetResolver
+    {
+        private readonly TextureId _textureResult;
+        private readonly FontId _fontResult;
+
+        public RecordingAssetResolver(TextureId textureResult, FontId fontResult)
+        {
+            _textureResult = textureResult;
+            _fontResult = fontResult;
+        }
+
+        public List<AssetId> TextureRequests { get; } = [];
+
+        public List<AssetId> FontRequests { get; } = [];
+
+        public TextureId ResolveTexture(AssetId asset)
+        {
+            TextureRequests.Add(asset);
+            return _textureResult;
+        }
+
+        public FontId ResolveFont(AssetId asset)
+        {
+            FontRequests.Add(asset);
+            return _fontResult;
+        }
     }
 }

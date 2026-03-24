@@ -25,6 +25,43 @@ public sealed class RenderPipelineCoordinatorTests
     }
 
     [Fact]
+    public void BuildFrame_WithoutExplicitView_ExposesNullViewToProcessors()
+    {
+        World world = CreateStartedWorld(new SubmittingRenderSystem([]));
+        RenderPassRegistry passRegistry = new();
+        passRegistry.RegisterDefaultPasses();
+        NullViewRecordingProcessor processor = new();
+        RenderProcessorRegistry processors = new();
+        processors.Register(processor);
+        RenderPipelineCoordinator coordinator = new(passRegistry, processors);
+
+        coordinator.BuildFrame(world);
+
+        Assert.Null(processor.CapturedView);
+    }
+
+    [Fact]
+    public void BuildFrame_WithExplicitView_ExposesViewToProcessors()
+    {
+        World world = CreateStartedWorld(new SubmittingRenderSystem([]));
+        RenderPassRegistry passRegistry = new();
+        passRegistry.RegisterDefaultPasses();
+        ViewRecordingProcessor processor = new();
+        RenderProcessorRegistry processors = new();
+        processors.Register(processor);
+        RenderPipelineCoordinator coordinator = new(passRegistry, processors);
+        RenderView view = new(
+            "Gameplay",
+            320,
+            180,
+            new ClearOptions(ClearColour: true, Colour: Color.Black));
+
+        coordinator.BuildFrame(world, view);
+
+        Assert.Same(view, processor.CapturedView);
+    }
+
+    [Fact]
     public void BuildFrame_ClearsQueueAndFrameBetweenBuilds()
     {
         SpriteRenderSystem system = new();
@@ -63,6 +100,11 @@ public sealed class RenderPipelineCoordinatorTests
     public void BuildFrame_WorldWithSpriteAndTextSystems_ProducesBuiltInPassesInRegistryOrder()
     {
         World world = CreateStartedWorld(new SpriteRenderSystem(), new TextRenderSystem());
+        RenderView view = new(
+            "Main",
+            320,
+            180,
+            new ClearOptions(ClearColour: true, Colour: Color.CornflowerBlue));
 
         Entity spriteEntity = new();
         spriteEntity.AddComponent(new TransformComponent
@@ -98,7 +140,7 @@ public sealed class RenderPipelineCoordinatorTests
 
         RenderPipelineCoordinator coordinator = new();
 
-        RenderFrame frame = coordinator.BuildFrame(world);
+        RenderFrame frame = coordinator.BuildFrame(world, view);
         RenderPassBuffer[] passes = frame.GetPopulatedPasses().ToArray();
 
         Assert.Equal(2, passes.Length);
@@ -122,6 +164,7 @@ public sealed class RenderPipelineCoordinatorTests
         Assert.Equal(18f, textCommand.Size);
         Assert.Equal(Color.Gold, textCommand.Colour);
         Assert.Equal(RenderSpace.Screen, textCommand.Metadata.Space);
+        Assert.Equal(new ClearOptions(ClearColour: true, Colour: Color.CornflowerBlue), view.Clear);
     }
 
     private static World CreateStartedWorld(params RenderSystem[] systems)
@@ -168,6 +211,26 @@ public sealed class RenderPipelineCoordinatorTests
         public void Process(ReadOnlySpan<TestRenderItem> items, IRenderPipelineContext context)
         {
             _calls.Add($"processor.Process:{items.Length}");
+        }
+    }
+
+    private sealed class NullViewRecordingProcessor : IRenderItemProcessor<TestRenderItem>
+    {
+        public RenderView? CapturedView { get; private set; }
+
+        public void Process(ReadOnlySpan<TestRenderItem> items, IRenderPipelineContext context)
+        {
+            CapturedView = context.View;
+        }
+    }
+
+    private sealed class ViewRecordingProcessor : IRenderItemProcessor<TestRenderItem>
+    {
+        public RenderView? CapturedView { get; private set; }
+
+        public void Process(ReadOnlySpan<TestRenderItem> items, IRenderPipelineContext context)
+        {
+            CapturedView = context.View;
         }
     }
 }

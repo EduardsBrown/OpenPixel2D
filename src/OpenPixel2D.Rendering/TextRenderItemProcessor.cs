@@ -4,6 +4,14 @@ namespace OpenPixel2D.Rendering;
 
 internal sealed class TextRenderItemProcessor : IRenderItemProcessor<TextRenderItem>
 {
+    private readonly IRenderAssetResolver _assetResolver;
+
+    public TextRenderItemProcessor(IRenderAssetResolver assetResolver)
+    {
+        ArgumentNullException.ThrowIfNull(assetResolver);
+        _assetResolver = assetResolver;
+    }
+
     public void Process(ReadOnlySpan<TextRenderItem> items, IRenderPipelineContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -22,16 +30,11 @@ internal sealed class TextRenderItemProcessor : IRenderItemProcessor<TextRenderI
 
             pass.Submit(new TextRenderCommand(
                 new RenderCommandMetadata(Layer: 0, SortKey: i, Space: route.Space),
-                ToFontId(item.Asset),
+                _assetResolver.ResolveFont(item.Asset),
                 item.Text,
                 item.Position,
                 item.Size,
                 item.Colour));
         }
-    }
-
-    private static FontId ToFontId(AssetId asset)
-    {
-        return asset.Value is null ? default : new FontId(asset.Value);
     }
 }

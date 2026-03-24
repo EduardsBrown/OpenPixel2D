@@ -4,6 +4,14 @@ namespace OpenPixel2D.Rendering;
 
 internal sealed class SpriteRenderItemProcessor : IRenderItemProcessor<SpriteRenderItem>
 {
+    private readonly IRenderAssetResolver _assetResolver;
+
+    public SpriteRenderItemProcessor(IRenderAssetResolver assetResolver)
+    {
+        ArgumentNullException.ThrowIfNull(assetResolver);
+        _assetResolver = assetResolver;
+    }
+
     public void Process(ReadOnlySpan<SpriteRenderItem> items, IRenderPipelineContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -23,7 +31,7 @@ internal sealed class SpriteRenderItemProcessor : IRenderItemProcessor<SpriteRen
 
             pass.Submit(new SpriteRenderCommand(
                 new RenderCommandMetadata(Layer: 0, SortKey: i, Space: route.Space),
-                ToTextureId(item.Asset),
+                _assetResolver.ResolveTexture(item.Asset),
                 item.Position,
                 item.Scale,
                 item.Rotation,
@@ -55,11 +63,6 @@ internal sealed class SpriteRenderItemProcessor : IRenderItemProcessor<SpriteRen
         });
 
         return sortedItems;
-    }
-
-    private static TextureId ToTextureId(AssetId asset)
-    {
-        return asset.Value is null ? default : new TextureId(asset.Value);
     }
 
     private readonly record struct IndexedSpriteRenderItem(SpriteRenderItem Item, int SubmissionIndex);

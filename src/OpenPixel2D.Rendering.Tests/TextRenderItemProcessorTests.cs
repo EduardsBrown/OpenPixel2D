@@ -7,12 +7,15 @@ namespace OpenPixel2D.Rendering.Tests;
 public sealed class TextRenderItemProcessorTests
 {
     [Fact]
-    public void Process_TextItems_PopulatesUiPassWithScreenSpaceCommands()
+    public void Process_TextItems_UsesAssetResolverAndPopulatesUiPassWithScreenSpaceCommands()
     {
         RenderPassRegistry registry = new();
         registry.RegisterDefaultPasses();
         RenderFrame frame = new(registry);
         RenderQueue queue = new();
+        RecordingAssetResolver resolver = new(
+            textureResult: default,
+            fontResult: new FontId("resolved-font"));
         queue.Submit(new TextRenderItem(
             new AssetId("ui-font"),
             "Hello",
@@ -20,7 +23,7 @@ public sealed class TextRenderItemProcessorTests
             24f,
             Color.Gold));
 
-        TextRenderItemProcessor processor = new();
+        TextRenderItemProcessor processor = new(resolver);
 
         processor.Process(queue.GetItems<TextRenderItem>(), new RenderPipelineContext(frame, queue));
 
@@ -28,7 +31,9 @@ public sealed class TextRenderItemProcessorTests
         TextRenderCommand command = Assert.IsType<TextRenderCommand>(Assert.Single(pass.Commands));
 
         Assert.Equal(RenderPassNames.UI, pass.Descriptor.Name);
-        Assert.Equal(new FontId("ui-font"), command.FontId);
+        Assert.Empty(resolver.TextureRequests);
+        Assert.Equal([new AssetId("ui-font")], resolver.FontRequests);
+        Assert.Equal(new FontId("resolved-font"), command.FontId);
         Assert.Equal("Hello", command.Text);
         Assert.Equal(new Vector2(12f, 18f), command.Position);
         Assert.Equal(24f, command.Size);
@@ -36,5 +41,33 @@ public sealed class TextRenderItemProcessorTests
         Assert.Equal(0, command.Metadata.Layer);
         Assert.Equal(0L, command.Metadata.SortKey);
         Assert.Equal(RenderSpace.Screen, command.Metadata.Space);
+    }
+
+    private sealed class RecordingAssetResolver : IRenderAssetResolver
+    {
+        private readonly TextureId _textureResult;
+        private readonly FontId _fontResult;
+
+        public RecordingAssetResolver(TextureId textureResult, FontId fontResult)
+        {
+            _textureResult = textureResult;
+            _fontResult = fontResult;
+        }
+
+        public List<AssetId> TextureRequests { get; } = [];
+
+        public List<AssetId> FontRequests { get; } = [];
+
+        public TextureId ResolveTexture(AssetId asset)
+        {
+            TextureRequests.Add(asset);
+            return _textureResult;
+        }
+
+        public FontId ResolveFont(AssetId asset)
+        {
+            FontRequests.Add(asset);
+            return _fontResult;
+        }
     }
 }
