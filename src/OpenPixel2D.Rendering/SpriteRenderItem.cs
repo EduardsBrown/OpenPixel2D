@@ -12,4 +12,7 @@ internal readonly record struct SpriteRenderItem(
     float Width,
     float Height,
     Color Colour,
-    int Layer) : IRenderItem;
+    int Layer,
+    long SortKey,
+    Vector2 Origin,
+    RectangleF? SourceRectangle) : IRenderItem;

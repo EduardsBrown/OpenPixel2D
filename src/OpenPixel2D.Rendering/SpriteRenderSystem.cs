@@ -47,7 +47,10 @@ public sealed class SpriteRenderSystem : RenderSystem
                 width,
                 height,
                 sprite.Colour,
-                sprite.Layer));
+                sprite.Layer,
+                sprite.SortKey,
+                sprite.Origin,
+                sprite.SourceRectangle));
         }
     }
 

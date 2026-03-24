@@ -25,7 +25,9 @@ public sealed class SpriteRenderSystemTests
             TextureId = new TextureId("player"),
             SourceRectangle = new RectangleF(1f, 2f, 16f, 16f),
             Colour = Color.Crimson,
+            Origin = new Vector2(8f, 8f),
             Layer = 3,
+            SortKey = 42,
             Active = true
         });
         world.AddEntity(entity);
@@ -34,7 +36,7 @@ public sealed class SpriteRenderSystemTests
         RenderFrame frame = CreateFrame();
         RenderQueue queue = new();
 
-        world.Render(new TestRenderContext(frame, queue));
+        world.Render(new RenderPipelineContext(frame, queue));
 
         ReadOnlySpan<SpriteRenderItem> items = queue.GetItems<SpriteRenderItem>();
 
@@ -47,6 +49,9 @@ public sealed class SpriteRenderSystemTests
         Assert.Equal(16f, items[0].Height);
         Assert.Equal(Color.Crimson, items[0].Colour);
         Assert.Equal(3, items[0].Layer);
+        Assert.Equal(42, items[0].SortKey);
+        Assert.Equal(new Vector2(8f, 8f), items[0].Origin);
+        Assert.Equal(new RectangleF(1f, 2f, 16f, 16f), items[0].SourceRectangle);
         Assert.Empty(frame.GetPopulatedPasses());
     }
 
@@ -74,7 +79,7 @@ public sealed class SpriteRenderSystemTests
         RenderFrame frame = CreateFrame();
         RenderQueue queue = new();
 
-        world.Render(new TestRenderContext(frame, queue));
+        world.Render(new RenderPipelineContext(frame, queue));
 
         Assert.True(queue.GetItems<SpriteRenderItem>().IsEmpty);
         Assert.Empty(frame.GetPopulatedPasses());
@@ -99,7 +104,7 @@ public sealed class SpriteRenderSystemTests
         RenderFrame frame = CreateFrame();
         RenderQueue queue = new();
 
-        world.Render(new TestRenderContext(frame, queue));
+        world.Render(new RenderPipelineContext(frame, queue));
 
         Assert.True(queue.GetItems<SpriteRenderItem>().IsEmpty);
         Assert.Empty(frame.GetPopulatedPasses());
@@ -129,7 +134,7 @@ public sealed class SpriteRenderSystemTests
         RenderFrame frame = CreateFrame();
         RenderQueue queue = new();
 
-        world.Render(new TestRenderContext(frame, queue));
+        world.Render(new RenderPipelineContext(frame, queue));
 
         Assert.True(queue.GetItems<SpriteRenderItem>().IsEmpty);
         Assert.Empty(frame.GetPopulatedPasses());
@@ -149,17 +154,5 @@ public sealed class SpriteRenderSystemTests
         RenderPassRegistry registry = new();
         registry.RegisterDefaultPasses();
         return new RenderFrame(registry);
-    }
-
-    private sealed class TestRenderContext : IRenderContext
-    {
-        public TestRenderContext(IRenderFrame frame, IRenderSubmissionContext submission)
-        {
-            Frame = frame;
-            Submission = submission;
-        }
-
-        public IRenderFrame Frame { get; }
-        public IRenderSubmissionContext Submission { get; }
     }
 }
