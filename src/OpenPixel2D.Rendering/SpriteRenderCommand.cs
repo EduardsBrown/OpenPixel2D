@@ -12,4 +12,4 @@ internal readonly record struct SpriteRenderCommand(
     float Rotation,
     float Width,
     float Height,
-    Color Colour) : IRenderCommand;
+    Color Colour) : ISpriteRenderCommand;

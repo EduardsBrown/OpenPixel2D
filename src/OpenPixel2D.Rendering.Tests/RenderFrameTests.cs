@@ -50,6 +50,24 @@ public sealed class RenderFrameTests
     }
 
     [Fact]
+    public void CompletedFrameReadSeam_ReturnsOnlyUsedPassesInPassOrder()
+    {
+        RenderPassRegistry registry = new();
+        registry.Register(new RenderPassDescriptor(RenderPassNames.UI, 100, new RenderState()));
+        registry.Register(new RenderPassDescriptor(RenderPassNames.WorldSprites, 0, new RenderState()));
+
+        RenderFrame frame = new(registry);
+        IRenderPassWriter worldPass = frame.GetPass(RenderPassNames.WorldSprites);
+        worldPass.Submit(new DummyRenderCommand(new RenderCommandMetadata(Layer: 1)));
+
+        IRenderCompletedFrame completedFrame = frame;
+        IRenderCompletedPass pass = Assert.Single(completedFrame.GetPopulatedPasses());
+
+        Assert.Equal(RenderPassNames.WorldSprites, pass.Descriptor.Name);
+        Assert.Single(pass.Commands);
+    }
+
+    [Fact]
     public void Clear_RemovesSubmittedCommandsAndLeavesNoPopulatedPasses()
     {
         RenderPassRegistry registry = new();

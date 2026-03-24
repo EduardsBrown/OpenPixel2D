@@ -6,7 +6,7 @@ namespace OpenPixel2D.Rendering;
 /// Minimal per-frame view state for the internal pipeline. This is the seam where future camera and
 /// render-target behavior can attach without changing processor signatures.
 /// </summary>
-internal sealed class RenderView
+internal sealed class RenderView : IRenderView
 {
     public RenderView(string name, int viewportWidth, int viewportHeight, ClearOptions clear = default)
     {

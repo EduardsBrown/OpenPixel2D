@@ -47,7 +47,7 @@ public sealed class RenderFrameExecutorTests
         world.Update();
 
         RenderPipelineCoordinator coordinator = new();
-        RenderFrame frame = coordinator.BuildFrame(world, view);
+        IRenderCompletedFrame frame = coordinator.BuildFrame(world, view);
         RecordingFrameExecutor executor = new();
 
         executor.Execute(frame, view);
@@ -75,11 +75,11 @@ public sealed class RenderFrameExecutorTests
 
     private sealed class RecordingFrameExecutor : IRenderFrameExecutor
     {
-        public RenderFrame? Frame { get; private set; }
+        public IRenderCompletedFrame? Frame { get; private set; }
 
-        public RenderView? View { get; private set; }
+        public IRenderView? View { get; private set; }
 
-        public void Execute(RenderFrame frame, RenderView? view)
+        public void Execute(IRenderCompletedFrame frame, IRenderView? view)
         {
             Frame = frame;
             View = view;

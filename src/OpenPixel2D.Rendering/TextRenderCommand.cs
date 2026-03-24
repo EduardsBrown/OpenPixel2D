@@ -10,4 +10,4 @@ internal readonly record struct TextRenderCommand(
     string Text,
     Vector2 Position,
     float Size,
-    Color Colour) : IRenderCommand;
+    Color Colour) : ITextRenderCommand;

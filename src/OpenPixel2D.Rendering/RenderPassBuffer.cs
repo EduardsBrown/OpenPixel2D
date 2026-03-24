@@ -3,7 +3,7 @@ using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering;
 
-public sealed class RenderPassBuffer : IRenderPassWriter
+public sealed class RenderPassBuffer : IRenderPassWriter, IRenderCompletedPass
 {
     private readonly List<IRenderCommand> _commands = [];
     private readonly ReadOnlyCollection<IRenderCommand> _readonlyCommands;

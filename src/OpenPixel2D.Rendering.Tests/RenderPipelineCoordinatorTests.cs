@@ -142,10 +142,14 @@ public sealed class RenderPipelineCoordinatorTests
 
         RenderFrame frame = coordinator.BuildFrame(world, view);
         RenderPassBuffer[] passes = frame.GetPopulatedPasses().ToArray();
+        IRenderCompletedFrame completedFrame = frame;
+        IRenderCompletedPass[] completedPasses = completedFrame.GetPopulatedPasses().ToArray();
 
         Assert.Equal(2, passes.Length);
         Assert.Equal(RenderPassNames.WorldSprites, passes[0].Descriptor.Name);
         Assert.Equal(RenderPassNames.UI, passes[1].Descriptor.Name);
+        Assert.Equal(RenderPassNames.WorldSprites, completedPasses[0].Descriptor.Name);
+        Assert.Equal(RenderPassNames.UI, completedPasses[1].Descriptor.Name);
 
         SpriteRenderCommand spriteCommand = Assert.IsType<SpriteRenderCommand>(Assert.Single(passes[0].Commands));
         Assert.Equal(new TextureId("player"), spriteCommand.TextureId);
@@ -156,6 +160,14 @@ public sealed class RenderPipelineCoordinatorTests
         Assert.Equal(24f, spriteCommand.Height);
         Assert.Equal(Color.Crimson, spriteCommand.Colour);
         Assert.Equal(RenderSpace.World, spriteCommand.Metadata.Space);
+        ISpriteRenderCommand spriteReadModel = Assert.IsAssignableFrom<ISpriteRenderCommand>(Assert.Single(completedPasses[0].Commands));
+        Assert.Equal(new TextureId("player"), spriteReadModel.TextureId);
+        Assert.Equal(new Vector2(32f, 48f), spriteReadModel.Position);
+        Assert.Equal(new Vector2(1f, 2f), spriteReadModel.Scale);
+        Assert.Equal(0.5f, spriteReadModel.Rotation);
+        Assert.Equal(16f, spriteReadModel.Width);
+        Assert.Equal(24f, spriteReadModel.Height);
+        Assert.Equal(Color.Crimson, spriteReadModel.Colour);
 
         TextRenderCommand textCommand = Assert.IsType<TextRenderCommand>(Assert.Single(passes[1].Commands));
         Assert.Equal(new FontId("ui-font"), textCommand.FontId);
@@ -164,6 +176,12 @@ public sealed class RenderPipelineCoordinatorTests
         Assert.Equal(18f, textCommand.Size);
         Assert.Equal(Color.Gold, textCommand.Colour);
         Assert.Equal(RenderSpace.Screen, textCommand.Metadata.Space);
+        ITextRenderCommand textReadModel = Assert.IsAssignableFrom<ITextRenderCommand>(Assert.Single(completedPasses[1].Commands));
+        Assert.Equal(new FontId("ui-font"), textReadModel.FontId);
+        Assert.Equal("Hello", textReadModel.Text);
+        Assert.Equal(new Vector2(5f, 6f), textReadModel.Position);
+        Assert.Equal(18f, textReadModel.Size);
+        Assert.Equal(Color.Gold, textReadModel.Colour);
         Assert.Equal(new ClearOptions(ClearColour: true, Colour: Color.CornflowerBlue), view.Clear);
     }
 

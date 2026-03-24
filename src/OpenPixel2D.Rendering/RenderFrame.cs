@@ -2,7 +2,7 @@ using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering;
 
-public sealed class RenderFrame : IRenderFrame
+public sealed class RenderFrame : IRenderFrame, IRenderCompletedFrame
 {
     private readonly IRenderPassRegistry _registry;
     private readonly Dictionary<string, RenderPassBuffer> _buffers = new(StringComparer.Ordinal);
@@ -31,6 +31,16 @@ public sealed class RenderFrame : IRenderFrame
     }
 
     public IEnumerable<RenderPassBuffer> GetPopulatedPasses()
+    {
+        return GetPopulatedPassesCore();
+    }
+
+    IEnumerable<IRenderCompletedPass> IRenderCompletedFrame.GetPopulatedPasses()
+    {
+        return GetPopulatedPassesCore();
+    }
+
+    private IEnumerable<RenderPassBuffer> GetPopulatedPassesCore()
     {
         IReadOnlyList<RenderPassDescriptor> passes = _registry.Passes;
 
