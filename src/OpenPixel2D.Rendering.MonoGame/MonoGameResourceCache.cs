@@ -3,17 +3,27 @@ using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering.MonoGame;
 
-internal sealed class MonoGameResourceCache
+/// <summary>
+/// Temporary backend-side manual resource registry for MonoGame render resources.
+/// Real asset loading will replace this seam in a later backend story.
+/// </summary>
+public sealed class MonoGameResourceCache : IMonoGameResourceLookup
 {
     private readonly Dictionary<TextureId, IMonoGameTextureResource> _textures = new();
     private readonly Dictionary<FontId, IMonoGameFontResource> _fonts = new();
 
+    /// <summary>
+    /// Registers the MonoGame texture used to resolve the supplied backend texture id.
+    /// </summary>
     public void RegisterTexture(TextureId textureId, Texture2D texture)
     {
         ArgumentNullException.ThrowIfNull(texture);
         RegisterTexture(textureId, new MonoGameTextureResource(texture));
     }
 
+    /// <summary>
+    /// Registers the MonoGame sprite font used to resolve the supplied backend font id.
+    /// </summary>
     public void RegisterFont(FontId fontId, SpriteFont font)
     {
         ArgumentNullException.ThrowIfNull(font);
@@ -30,6 +40,16 @@ internal sealed class MonoGameResourceCache
     {
         ArgumentNullException.ThrowIfNull(font);
         _fonts[fontId] = font;
+    }
+
+    IMonoGameTextureResource IMonoGameResourceLookup.GetRequiredTexture(TextureId textureId)
+    {
+        return GetRequiredTexture(textureId);
+    }
+
+    IMonoGameFontResource IMonoGameResourceLookup.GetRequiredFont(FontId fontId)
+    {
+        return GetRequiredFont(fontId);
     }
 
     internal IMonoGameTextureResource GetRequiredTexture(TextureId textureId)
@@ -51,6 +71,13 @@ internal sealed class MonoGameResourceCache
 
         throw new InvalidOperationException($"No MonoGame font resource is registered for font id '{fontId.Value}'.");
     }
+}
+
+internal interface IMonoGameResourceLookup
+{
+    IMonoGameTextureResource GetRequiredTexture(TextureId textureId);
+
+    IMonoGameFontResource GetRequiredFont(FontId fontId);
 }
 
 internal interface IMonoGameTextureResource

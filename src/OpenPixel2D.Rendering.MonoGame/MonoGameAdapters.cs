@@ -14,7 +14,9 @@ internal interface IMonoGameSpriteBatchAdapter : IDisposable
 {
     void Begin(MonoGameSpriteBatchSettings settings);
 
-    void Draw(IMonoGameTextureResource texture, ISpriteRenderCommand command, XnaColor colour);
+    void DrawSprite(IMonoGameTextureResource texture, ISpriteRenderCommand command, XnaColor colour);
+
+    void DrawText(IMonoGameFontResource font, ITextRenderCommand command, XnaColor colour);
 
     void End();
 }
@@ -57,7 +59,7 @@ internal sealed class MonoGameSpriteBatchAdapter : IMonoGameSpriteBatchAdapter
             transformMatrix: null);
     }
 
-    public void Draw(IMonoGameTextureResource texture, ISpriteRenderCommand command, XnaColor colour)
+    public void DrawSprite(IMonoGameTextureResource texture, ISpriteRenderCommand command, XnaColor colour)
     {
         ArgumentNullException.ThrowIfNull(texture);
 
@@ -85,6 +87,25 @@ internal sealed class MonoGameSpriteBatchAdapter : IMonoGameSpriteBatchAdapter
             XnaVector2.Zero,
             scale,
             SpriteEffects.None,
+            layerDepth: 0f);
+    }
+
+    public void DrawText(IMonoGameFontResource font, ITextRenderCommand command, XnaColor colour)
+    {
+        ArgumentNullException.ThrowIfNull(font);
+
+        MonoGameFontResource monoGameFont = font as MonoGameFontResource
+            ?? throw new InvalidOperationException("Font resource is not backed by a MonoGame SpriteFont.");
+
+        _spriteBatch.DrawString(
+            monoGameFont.Font,
+            command.Text,
+            new XnaVector2(command.Position.X, command.Position.Y),
+            colour,
+            rotation: 0f,
+            origin: XnaVector2.Zero,
+            scale: command.Size,
+            effects: SpriteEffects.None,
             layerDepth: 0f);
     }
 

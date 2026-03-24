@@ -1,24 +1,24 @@
 using Microsoft.Xna.Framework.Graphics;
-using OpenPixel2D.Rendering.Abstractions;
 using OpenPixel2D.Rendering;
+using OpenPixel2D.Rendering.Abstractions;
 using RenderClearOptions = OpenPixel2D.Rendering.Abstractions.ClearOptions;
+using XnaColor = Microsoft.Xna.Framework.Color;
 
 namespace OpenPixel2D.Rendering.MonoGame;
 
+/// <summary>
+/// Executes completed backend-neutral render frames through MonoGame DesktopGL.
+/// Frame construction remains in the core rendering pipeline; this type is execution-only.
+/// </summary>
 public sealed class MonoGameRenderFrameExecutor : IRenderFrameExecutor, IDisposable
 {
     private readonly IMonoGameGraphicsDeviceAdapter _graphicsDevice;
     private readonly IMonoGameSpriteBatchAdapter _spriteBatch;
     private readonly MonoGameRenderStateMapper _stateMapper;
-    private readonly MonoGameResourceCache _resources;
+    private readonly IMonoGameResourceLookup _resources;
     private readonly bool _ownsSpriteBatch;
 
-    public MonoGameRenderFrameExecutor(GraphicsDevice graphicsDevice)
-        : this(graphicsDevice, new MonoGameResourceCache())
-    {
-    }
-
-    internal MonoGameRenderFrameExecutor(GraphicsDevice graphicsDevice, MonoGameResourceCache resources)
+    public MonoGameRenderFrameExecutor(GraphicsDevice graphicsDevice, MonoGameResourceCache resources)
         : this(
             new MonoGameGraphicsDeviceAdapter(graphicsDevice),
             CreateSpriteBatchAdapter(graphicsDevice),
@@ -32,7 +32,7 @@ public sealed class MonoGameRenderFrameExecutor : IRenderFrameExecutor, IDisposa
         IMonoGameGraphicsDeviceAdapter graphicsDevice,
         IMonoGameSpriteBatchAdapter spriteBatch,
         MonoGameRenderStateMapper stateMapper,
-        MonoGameResourceCache resources,
+        IMonoGameResourceLookup resources,
         bool ownsSpriteBatch = false)
     {
         ArgumentNullException.ThrowIfNull(graphicsDevice);
@@ -45,16 +45,6 @@ public sealed class MonoGameRenderFrameExecutor : IRenderFrameExecutor, IDisposa
         _stateMapper = stateMapper;
         _resources = resources;
         _ownsSpriteBatch = ownsSpriteBatch;
-    }
-
-    public void RegisterTexture(TextureId textureId, Texture2D texture)
-    {
-        _resources.RegisterTexture(textureId, texture);
-    }
-
-    public void RegisterFont(FontId fontId, SpriteFont font)
-    {
-        _resources.RegisterFont(fontId, font);
     }
 
     public void Execute(IRenderCompletedFrame frame, IRenderView? view)
@@ -85,9 +75,10 @@ public sealed class MonoGameRenderFrameExecutor : IRenderFrameExecutor, IDisposa
                 $"Render target '{pass.Descriptor.Target.Value}' is not supported by the MonoGame backend in this batch.");
         }
 
+        IReadOnlyList<PreparedDrawCommand> preparedCommands = PreparePass(pass);
         ApplyClear(pass.Descriptor.Clear);
 
-        if (!HasExecutableSprites(pass))
+        if (preparedCommands.Count == 0)
         {
             return;
         }
@@ -97,28 +88,85 @@ public sealed class MonoGameRenderFrameExecutor : IRenderFrameExecutor, IDisposa
 
         try
         {
-            IReadOnlyList<IRenderCommand> commands = pass.Commands;
-
-            for (int i = 0; i < commands.Count; i++)
+            for (int i = 0; i < preparedCommands.Count; i++)
             {
-                if (commands[i] is not ISpriteRenderCommand spriteCommand)
-                {
-                    continue;
-                }
-
-                if (spriteCommand.Metadata.StateOverride is not null)
-                {
-                    continue;
-                }
-
-                IMonoGameTextureResource texture = _resources.GetRequiredTexture(spriteCommand.TextureId);
-                _spriteBatch.Draw(texture, spriteCommand, _stateMapper.MapColor(spriteCommand.Colour));
+                ExecutePreparedCommand(preparedCommands[i]);
             }
         }
         finally
         {
             _spriteBatch.End();
         }
+    }
+
+    private IReadOnlyList<PreparedDrawCommand> PreparePass(IRenderCompletedPass pass)
+    {
+        IReadOnlyList<IRenderCommand> commands = pass.Commands;
+
+        if (commands.Count == 0)
+        {
+            return Array.Empty<PreparedDrawCommand>();
+        }
+
+        List<PreparedDrawCommand> preparedCommands = new(commands.Count);
+
+        for (int i = 0; i < commands.Count; i++)
+        {
+            preparedCommands.Add(PrepareCommand(pass.Descriptor.Name, commands[i]));
+        }
+
+        return preparedCommands;
+    }
+
+    private PreparedDrawCommand PrepareCommand(string passName, IRenderCommand command)
+    {
+        return command switch
+        {
+            ISpriteRenderCommand spriteCommand => PrepareSpriteCommand(passName, spriteCommand),
+            ITextRenderCommand textCommand => PrepareTextCommand(passName, textCommand),
+            _ => throw new NotSupportedException(
+                $"Render command type '{command.GetType().Name}' is not supported by the MonoGame backend in pass '{passName}'.")
+        };
+    }
+
+    private PreparedDrawCommand PrepareSpriteCommand(string passName, ISpriteRenderCommand command)
+    {
+        ValidateStateOverride(passName, command);
+        IMonoGameTextureResource texture = _resources.GetRequiredTexture(command.TextureId);
+        return PreparedDrawCommand.ForSprite(texture, command, _stateMapper.MapColor(command.Colour));
+    }
+
+    private PreparedDrawCommand PrepareTextCommand(string passName, ITextRenderCommand command)
+    {
+        ValidateStateOverride(passName, command);
+        IMonoGameFontResource font = _resources.GetRequiredFont(command.FontId);
+        return PreparedDrawCommand.ForText(font, command, _stateMapper.MapColor(command.Colour));
+    }
+
+    private void ExecutePreparedCommand(PreparedDrawCommand command)
+    {
+        switch (command.Kind)
+        {
+            case PreparedDrawCommandKind.Sprite:
+                _spriteBatch.DrawSprite(command.Texture!, command.SpriteCommand!, command.Colour);
+                break;
+            case PreparedDrawCommandKind.Text:
+                _spriteBatch.DrawText(command.Font!, command.TextCommand!, command.Colour);
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported prepared command kind '{command.Kind}'.");
+        }
+    }
+
+    private static void ValidateStateOverride(string passName, IRenderCommand command)
+    {
+        if (command.Metadata.StateOverride is null)
+        {
+            return;
+        }
+
+        throw new NotSupportedException(
+            $"Render command type '{command.GetType().Name}' in pass '{passName}' uses Metadata.StateOverride, which is not supported by the MonoGame backend in this batch.");
     }
 
     private void ApplyClear(RenderClearOptions? clear)
@@ -142,24 +190,40 @@ public sealed class MonoGameRenderFrameExecutor : IRenderFrameExecutor, IDisposa
             value.Stencil);
     }
 
-    private static bool HasExecutableSprites(IRenderCompletedPass pass)
-    {
-        IReadOnlyList<IRenderCommand> commands = pass.Commands;
-
-        for (int i = 0; i < commands.Count; i++)
-        {
-            if (commands[i] is ISpriteRenderCommand spriteCommand && spriteCommand.Metadata.StateOverride is null)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private static IMonoGameSpriteBatchAdapter CreateSpriteBatchAdapter(GraphicsDevice graphicsDevice)
     {
         ArgumentNullException.ThrowIfNull(graphicsDevice);
         return new MonoGameSpriteBatchAdapter(new SpriteBatch(graphicsDevice));
+    }
+
+    private enum PreparedDrawCommandKind
+    {
+        Sprite,
+        Text
+    }
+
+    private readonly record struct PreparedDrawCommand(
+        PreparedDrawCommandKind Kind,
+        IMonoGameTextureResource? Texture,
+        IMonoGameFontResource? Font,
+        ISpriteRenderCommand? SpriteCommand,
+        ITextRenderCommand? TextCommand,
+        XnaColor Colour)
+    {
+        public static PreparedDrawCommand ForSprite(
+            IMonoGameTextureResource texture,
+            ISpriteRenderCommand command,
+            XnaColor colour)
+        {
+            return new PreparedDrawCommand(PreparedDrawCommandKind.Sprite, texture, null, command, null, colour);
+        }
+
+        public static PreparedDrawCommand ForText(
+            IMonoGameFontResource font,
+            ITextRenderCommand command,
+            XnaColor colour)
+        {
+            return new PreparedDrawCommand(PreparedDrawCommandKind.Text, null, font, null, command, colour);
+        }
     }
 }
