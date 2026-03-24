@@ -7,7 +7,17 @@ namespace OpenPixel2D.Rendering;
 
 public class SpriteComponent : Component
 {
-    public TextureId TextureId { get; set; }
+    public AssetId Asset { get; set; }
+
+    public TextureId TextureId
+    {
+        get => Asset.Value is null ? default : new TextureId(Asset.Value);
+        set => Asset = value.Value is null ? default : new AssetId(value.Value);
+    }
+
+    public float Width { get; set; }
+
+    public float Height { get; set; }
 
     public RectangleF? SourceRectangle { get; set; }
 

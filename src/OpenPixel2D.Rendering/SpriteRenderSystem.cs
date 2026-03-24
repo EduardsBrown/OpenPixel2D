@@ -14,8 +14,6 @@ public sealed class SpriteRenderSystem : RenderSystem
             return;
         }
 
-        IRenderPassWriter? pass = null;
-
         foreach (var entity in World.GetEntitiesWith<SpriteComponent>())
         {
             if (!entity.TryGetComponent(out TransformComponent? transform) || transform == null)
@@ -23,21 +21,43 @@ public sealed class SpriteRenderSystem : RenderSystem
                 continue;
             }
 
-            if (!entity.TryGetComponent(out SpriteComponent? sprite) || !sprite.Active)
+            if (!entity.TryGetComponent(out SpriteComponent? sprite) || sprite == null || !sprite.Active)
             {
                 continue;
             }
 
-            pass = renderContext.Frame.GetPass(RenderPassNames.WorldSprites);
-            pass.Submit(new SpriteRenderCommand(
-                new RenderCommandMetadata(sprite.Layer, sprite.SortKey, RenderSpace.World),
-                sprite.TextureId,
+            if (string.IsNullOrWhiteSpace(sprite.Asset.Value))
+            {
+                continue;
+            }
+
+            float width = ResolveDimension(sprite.Width, sprite.SourceRectangle?.Width);
+            float height = ResolveDimension(sprite.Height, sprite.SourceRectangle?.Height);
+
+            if (width <= 0f || height <= 0f)
+            {
+                continue;
+            }
+
+            renderContext.Submission.Submit(new SpriteRenderItem(
+                sprite.Asset,
                 transform.Position,
                 transform.Scale,
                 transform.Rotation,
-                sprite.Origin,
-                sprite.SourceRectangle,
-                sprite.Colour));
+                width,
+                height,
+                sprite.Colour,
+                sprite.Layer));
         }
+    }
+
+    private static float ResolveDimension(float value, float? fallback)
+    {
+        if (value != 0f)
+        {
+            return value;
+        }
+
+        return fallback ?? 0f;
     }
 }
