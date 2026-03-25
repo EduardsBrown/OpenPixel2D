@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OpenPixel2D.Content\OpenPixel2D.Content.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Engine\OpenPixel2D.Engine.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Rendering\OpenPixel2D.Rendering.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Rendering.Abstractions\OpenPixel2D.Rendering.Abstractions.csproj" />

@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OpenPixel2D.Content\OpenPixel2D.Content.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Components\OpenPixel2D.Components.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Engine\OpenPixel2D.Engine.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Rendering\OpenPixel2D.Rendering.csproj" />

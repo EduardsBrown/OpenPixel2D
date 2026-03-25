@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using OpenPixel2D.Components;
+using OpenPixel2D.Content;
 using OpenPixel2D.Engine;
 using OpenPixel2D.Rendering;
 using OpenPixel2D.Rendering.Abstractions;
@@ -33,8 +34,8 @@ internal sealed class SmokeGame : Game
         _resources = new MonoGameResourceCache();
         _view = new SmokeRenderView(
             "Smoke",
-            640,
-            360,
+            1200,
+            800,
             new RenderClearOptions(ClearColour: true, Colour: SystemDrawingColor.FromArgb(255, 18, 24, 38)));
     }
 
@@ -95,7 +96,7 @@ internal sealed class SmokeGame : Game
         spriteEntity.AddComponent(spriteTransform);
         spriteEntity.AddComponent(new SpriteComponent
         {
-            Asset = new AssetId("smoke-texture"),
+            Asset = new AssetPath("smoke-texture"),
             Width = 96f,
             Height = 96f,
             Colour = SystemDrawingColor.White
@@ -111,7 +112,7 @@ internal sealed class SmokeGame : Game
         textEntity.AddComponent(textTransform);
         textEntity.AddComponent(new TextComponent
         {
-            Asset = new AssetId("smoke-font"),
+            Asset = new AssetPath("smoke-font"),
             Text = "TEXT",
             Size = 4f,
             Colour = SystemDrawingColor.Gold

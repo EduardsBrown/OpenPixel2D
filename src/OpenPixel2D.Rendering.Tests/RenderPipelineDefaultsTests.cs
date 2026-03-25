@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Numerics;
+using OpenPixel2D.Content;
 using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering.Tests;
@@ -11,7 +12,7 @@ public sealed class RenderPipelineDefaultsTests
     {
         RenderQueue queue = new();
         queue.Submit(new SpriteRenderItem(
-            new AssetId("player"),
+            new AssetPath("player"),
             new Vector2(10f, 20f),
             Vector2.One,
             0f,
@@ -19,7 +20,7 @@ public sealed class RenderPipelineDefaultsTests
             16f,
             Color.White));
         queue.Submit(new TextRenderItem(
-            new AssetId("ui-font"),
+            new AssetPath("ui-font"),
             "Score",
             new Vector2(1f, 2f),
             12f,
@@ -41,16 +42,16 @@ public sealed class RenderPipelineDefaultsTests
     {
         public List<string> Calls { get; } = [];
 
-        public TextureId ResolveTexture(AssetId asset)
+        public TextureId ResolveTexture(AssetPath asset)
         {
-            Calls.Add($"texture:{asset.Value}");
-            return new TextureId(asset.Value);
+            Calls.Add($"texture:{asset}");
+            return new TextureId(asset.ToString());
         }
 
-        public FontId ResolveFont(AssetId asset)
+        public FontId ResolveFont(AssetPath asset)
         {
-            Calls.Add($"font:{asset.Value}");
-            return new FontId(asset.Value);
+            Calls.Add($"font:{asset}");
+            return new FontId(asset.ToString());
         }
     }
 }

@@ -1,3 +1,4 @@
+using OpenPixel2D.Content;
 using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering;
@@ -8,7 +9,7 @@ namespace OpenPixel2D.Rendering;
 /// </summary>
 internal interface IRenderAssetResolver
 {
-    TextureId ResolveTexture(AssetId asset);
+    TextureId ResolveTexture(AssetPath asset);
 
-    FontId ResolveFont(AssetId asset);
+    FontId ResolveFont(AssetPath asset);
 }

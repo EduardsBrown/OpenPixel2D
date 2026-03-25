@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Numerics;
 using OpenPixel2D.Components;
+using OpenPixel2D.Content;
 using OpenPixel2D.Engine;
 using OpenPixel2D.Rendering.Abstractions;
 
@@ -20,7 +21,7 @@ public sealed class TextRenderSystemTests
         });
         entity.AddComponent(new TextComponent
         {
-            Asset = new AssetId("ui-font"),
+            Asset = new AssetPath("ui-font"),
             Text = "Score"
         });
         world.AddEntity(entity);
@@ -33,7 +34,7 @@ public sealed class TextRenderSystemTests
 
         TextRenderItem item = Assert.Single(queue.GetItems<TextRenderItem>().ToArray());
 
-        Assert.Equal(new AssetId("ui-font"), item.Asset);
+        Assert.Equal(new AssetPath("ui-font"), item.Asset);
         Assert.Equal("Score", item.Text);
         Assert.Equal(new Vector2(12f, 18f), item.Position);
         Assert.Equal(1f, item.Size);
@@ -53,7 +54,7 @@ public sealed class TextRenderSystemTests
         });
         entity.AddComponent(new TextComponent
         {
-            Asset = new AssetId("ui-font"),
+            Asset = new AssetPath("ui-font"),
             Text = string.Empty
         });
         world.AddEntity(entity);
@@ -74,7 +75,7 @@ public sealed class TextRenderSystemTests
         Entity entity = new();
         entity.AddComponent(new TextComponent
         {
-            Asset = new AssetId("ui-font"),
+            Asset = new AssetPath("ui-font"),
             Text = "Score"
         });
         world.AddEntity(entity);
@@ -99,7 +100,7 @@ public sealed class TextRenderSystemTests
         });
         entity.AddComponent(new TextComponent
         {
-            Asset = new AssetId("ui-font"),
+            Asset = new AssetPath("ui-font"),
             Text = "Score",
             Size = 0f
         });

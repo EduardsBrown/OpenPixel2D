@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Numerics;
 using OpenPixel2D.Components;
+using OpenPixel2D.Content;
 using OpenPixel2D.Engine;
 using OpenPixel2D.Rendering.Abstractions;
 
@@ -74,7 +75,7 @@ public sealed class RenderPipelineCoordinatorTests
         };
         SpriteComponent sprite = new()
         {
-            Asset = new AssetId("player"),
+            Asset = new AssetPath("player"),
             Width = 16f,
             Height = 16f
         };
@@ -115,7 +116,7 @@ public sealed class RenderPipelineCoordinatorTests
         });
         spriteEntity.AddComponent(new SpriteComponent
         {
-            Asset = new AssetId("player"),
+            Asset = new AssetPath("player"),
             Width = 16f,
             Height = 24f,
             Colour = Color.Crimson
@@ -129,7 +130,7 @@ public sealed class RenderPipelineCoordinatorTests
         });
         textEntity.AddComponent(new TextComponent
         {
-            Asset = new AssetId("ui-font"),
+            Asset = new AssetPath("ui-font"),
             Text = "Hello",
             Size = 18f,
             Colour = Color.Gold

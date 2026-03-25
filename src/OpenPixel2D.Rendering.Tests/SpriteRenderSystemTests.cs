@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Numerics;
 using OpenPixel2D.Components;
+using OpenPixel2D.Content;
 using OpenPixel2D.Engine;
 using OpenPixel2D.Rendering.Abstractions;
 
@@ -34,7 +35,7 @@ public sealed class SpriteRenderSystemTests
         });
         entity.AddComponent(new SpriteComponent
         {
-            Asset = new AssetId("player"),
+            Asset = new AssetPath("player"),
             Width = 16f,
             Height = 24f,
             Colour = Color.Crimson
@@ -50,7 +51,7 @@ public sealed class SpriteRenderSystemTests
         ReadOnlySpan<SpriteRenderItem> items = queue.GetItems<SpriteRenderItem>();
 
         Assert.Equal(1, items.Length);
-        Assert.Equal(new AssetId("player"), items[0].Asset);
+        Assert.Equal(new AssetPath("player"), items[0].Asset);
         Assert.Equal(new Vector2(32f, 48f), items[0].Position);
         Assert.Equal(new Vector2(1.5f, 2f), items[0].Scale);
         Assert.Equal(0.5f, items[0].Rotation);
@@ -73,7 +74,7 @@ public sealed class SpriteRenderSystemTests
         });
         entity.AddComponent(new SpriteComponent
         {
-            Asset = new AssetId("player")
+            Asset = new AssetPath("player")
         });
         world.AddEntity(entity);
         world.Update();
@@ -102,7 +103,7 @@ public sealed class SpriteRenderSystemTests
         });
         entity.AddComponent(new SpriteComponent
         {
-            Asset = new AssetId("player"),
+            Asset = new AssetPath("player"),
             Width = 16f,
             Height = 16f,
             Active = false
@@ -127,7 +128,7 @@ public sealed class SpriteRenderSystemTests
         Entity entity = new();
         entity.AddComponent(new SpriteComponent
         {
-            Asset = new AssetId("player"),
+            Asset = new AssetPath("player"),
             Width = 16f,
             Height = 16f
         });
@@ -156,7 +157,7 @@ public sealed class SpriteRenderSystemTests
         });
         entity.AddComponent(new SpriteComponent
         {
-            Asset = new AssetId("player"),
+            Asset = new AssetPath("player"),
             Width = -1f,
             Height = 16f
         });

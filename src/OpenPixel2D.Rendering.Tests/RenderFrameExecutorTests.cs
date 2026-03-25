@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Numerics;
 using OpenPixel2D.Components;
+using OpenPixel2D.Content;
 using OpenPixel2D.Engine;
 using OpenPixel2D.Rendering.Abstractions;
 
@@ -26,7 +27,7 @@ public sealed class RenderFrameExecutorTests
         });
         spriteEntity.AddComponent(new SpriteComponent
         {
-            Asset = new AssetId("player"),
+            Asset = new AssetPath("player"),
             Width = 16f,
             Height = 16f
         });
@@ -39,7 +40,7 @@ public sealed class RenderFrameExecutorTests
         });
         textEntity.AddComponent(new TextComponent
         {
-            Asset = new AssetId("ui-font"),
+            Asset = new AssetPath("ui-font"),
             Text = "Ready"
         });
         world.AddEntity(textEntity);
