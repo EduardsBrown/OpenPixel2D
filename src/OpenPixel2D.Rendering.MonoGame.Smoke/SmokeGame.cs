@@ -1,9 +1,12 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using OpenPixel2D.Components;
+using OpenPixel2D.Engine;
 using OpenPixel2D.Rendering;
 using OpenPixel2D.Rendering.Abstractions;
 using OpenPixel2D.Rendering.MonoGame;
+using OpenPixel2D.Runtime;
 using NumericsVector2 = System.Numerics.Vector2;
 using RenderClearOptions = OpenPixel2D.Rendering.Abstractions.ClearOptions;
 using SystemDrawingColor = System.Drawing.Color;
@@ -19,14 +22,12 @@ internal sealed class SmokeGame : Game
     private readonly MonoGameResourceCache _resources;
     private readonly IRenderView _view;
 
-    private MonoGameRenderFrameExecutor? _executor;
-    private RenderFrame? _frame;
+    private EngineHost? _host;
+    private MonoGameEngineHostBridge? _bridge;
 
     public SmokeGame()
     {
         _graphics = new GraphicsDeviceManager(this);
-        _graphics.PreferredBackBufferWidth = 640;
-        _graphics.PreferredBackBufferHeight = 360;
         IsMouseVisible = true;
         Window.Title = "OpenPixel2D MonoGame Backend Smoke";
         _resources = new MonoGameResourceCache();
@@ -45,8 +46,11 @@ internal sealed class SmokeGame : Game
         _resources.RegisterTexture(new TextureId("smoke-texture"), spriteTexture);
         _resources.RegisterFont(new FontId("smoke-font"), font);
 
-        _executor = new MonoGameRenderFrameExecutor(GraphicsDevice, _resources);
-        _frame = CreateFrame();
+        World world = CreateWorld();
+        _host = new EngineHost(world, new MonoGameRenderFrameExecutor(GraphicsDevice, _resources));
+        _bridge = new MonoGameEngineHostBridge(_host);
+        _host.Initialize();
+        _host.Start();
     }
 
     protected override void Update(GameTime gameTime)
@@ -56,17 +60,13 @@ internal sealed class SmokeGame : Game
             Exit();
         }
 
+        _bridge?.Update(gameTime);
         base.Update(gameTime);
     }
 
     protected override void Draw(GameTime gameTime)
     {
-        if (_executor is null || _frame is null)
-        {
-            return;
-        }
-
-        _executor.Execute(_frame, _view);
+        _bridge?.Draw(gameTime, _view);
         base.Draw(gameTime);
     }
 
@@ -74,45 +74,52 @@ internal sealed class SmokeGame : Game
     {
         if (disposing)
         {
-            _executor?.Dispose();
+            _host?.Dispose();
         }
 
         base.Dispose(disposing);
     }
 
-    private static RenderFrame CreateFrame()
+    private static World CreateWorld()
     {
-        RenderPassRegistry registry = new();
-        registry.Register(new RenderPassDescriptor(
-            RenderPassNames.WorldSprites,
-            0,
-            new RenderState(SamplerMode: SamplerMode.PointClamp)));
-        registry.Register(new RenderPassDescriptor(
-            RenderPassNames.UI,
-            100,
-            new RenderState(SamplerMode: SamplerMode.PointClamp)));
+        World world = new();
+        world.AddSystem(new SpriteRenderSystem());
+        world.AddSystem(new TextRenderSystem());
 
-        RenderFrame frame = new(registry);
+        TransformComponent spriteTransform = new()
+        {
+            Position = new NumericsVector2(56f, 64f),
+            Scale = NumericsVector2.One
+        };
+        Entity spriteEntity = new();
+        spriteEntity.AddComponent(spriteTransform);
+        spriteEntity.AddComponent(new SpriteComponent
+        {
+            Asset = new AssetId("smoke-texture"),
+            Width = 96f,
+            Height = 96f,
+            Colour = SystemDrawingColor.White
+        });
+        spriteEntity.AddComponent(new SmokeMotionBehaviour(spriteTransform));
+        world.AddEntity(spriteEntity);
 
-        frame.GetPass(RenderPassNames.WorldSprites).Submit(new SpriteRenderCommand(
-            new RenderCommandMetadata(Space: RenderSpace.Screen),
-            new TextureId("smoke-texture"),
-            new NumericsVector2(56f, 64f),
-            NumericsVector2.One,
-            0f,
-            96f,
-            96f,
-            SystemDrawingColor.White));
+        TransformComponent textTransform = new()
+        {
+            Position = new NumericsVector2(56f, 190f)
+        };
+        Entity textEntity = new();
+        textEntity.AddComponent(textTransform);
+        textEntity.AddComponent(new TextComponent
+        {
+            Asset = new AssetId("smoke-font"),
+            Text = "TEXT",
+            Size = 4f,
+            Colour = SystemDrawingColor.Gold
+        });
+        textEntity.AddComponent(new SmokePulseBehaviour(textTransform));
+        world.AddEntity(textEntity);
 
-        frame.GetPass(RenderPassNames.UI).Submit(new TextRenderCommand(
-            new RenderCommandMetadata(Space: RenderSpace.Screen),
-            new FontId("smoke-font"),
-            "TEXT",
-            new NumericsVector2(56f, 190f),
-            4f,
-            SystemDrawingColor.Gold));
-
-        return frame;
+        return world;
     }
 
     private static Texture2D CreateSpriteTexture(GraphicsDevice graphicsDevice)
@@ -200,6 +207,59 @@ internal sealed class SmokeGame : Game
     }
 
     private readonly record struct GlyphDefinition(char Character, string[] Rows);
+
+    private sealed class SmokeMotionBehaviour : BehaviorComponent
+    {
+        private readonly TransformComponent _transform;
+        private readonly NumericsVector2 _origin;
+
+        public SmokeMotionBehaviour(TransformComponent transform)
+        {
+            ArgumentNullException.ThrowIfNull(transform);
+            _transform = transform;
+            _origin = transform.Position;
+        }
+
+        public override void OnStart()
+        {
+            // Startup uses the zeroed public Time snapshot published by EngineHost before World.Start().
+            _transform.Rotation = Time.DeltaTime;
+        }
+
+        public override void Update()
+        {
+            float totalTime = (float)Time.TotalTime;
+            _transform.Position = _origin + new NumericsVector2(
+                MathF.Sin(totalTime * 2f) * 18f,
+                MathF.Cos(totalTime * 1.25f) * 6f);
+            _transform.Rotation = totalTime * 0.35f;
+        }
+    }
+
+    private sealed class SmokePulseBehaviour : BehaviorComponent
+    {
+        private readonly TransformComponent _transform;
+        private readonly NumericsVector2 _origin;
+
+        public SmokePulseBehaviour(TransformComponent transform)
+        {
+            ArgumentNullException.ThrowIfNull(transform);
+            _transform = transform;
+            _origin = transform.Position;
+        }
+
+        public override void OnStart()
+        {
+            _transform.Scale = NumericsVector2.One + new NumericsVector2((float)Time.FrameCount * 0f);
+        }
+
+        public override void Update()
+        {
+            float pulse = 1f + (MathF.Sin((float)Time.TotalTime * 3f) * 0.08f);
+            _transform.Position = _origin + new NumericsVector2(0f, MathF.Sin((float)Time.TotalTime * 2f) * 4f);
+            _transform.Scale = new NumericsVector2(pulse, pulse);
+        }
+    }
 
     private sealed class SmokeRenderView : IRenderView
     {

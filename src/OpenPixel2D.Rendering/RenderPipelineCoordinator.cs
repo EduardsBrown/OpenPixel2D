@@ -7,7 +7,7 @@ namespace OpenPixel2D.Rendering;
 /// Builds a finished <see cref="RenderFrame"/> by running render systems into the queue and then
 /// applying the built-in processors. Backend execution happens later through a separate executor seam.
 /// </summary>
-internal sealed class RenderPipelineCoordinator
+public sealed class RenderPipelineCoordinator
 {
     private readonly RenderQueue _queue;
     private readonly RenderFrame _frame;
@@ -35,13 +35,13 @@ internal sealed class RenderPipelineCoordinator
         return BuildFrameCore(world, view: null);
     }
 
-    public RenderFrame BuildFrame(World world, RenderView view)
+    public RenderFrame BuildFrame(World world, IRenderView view)
     {
         ArgumentNullException.ThrowIfNull(view);
         return BuildFrameCore(world, view);
     }
 
-    private RenderFrame BuildFrameCore(World world, RenderView? view)
+    private RenderFrame BuildFrameCore(World world, IRenderView? view)
     {
         ArgumentNullException.ThrowIfNull(world);
 

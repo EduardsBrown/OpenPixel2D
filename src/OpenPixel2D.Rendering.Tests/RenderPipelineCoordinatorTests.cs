@@ -50,7 +50,7 @@ public sealed class RenderPipelineCoordinatorTests
         RenderProcessorRegistry processors = new();
         processors.Register(processor);
         RenderPipelineCoordinator coordinator = new(passRegistry, processors);
-        RenderView view = new(
+        TestRenderView view = new(
             "Gameplay",
             320,
             180,
@@ -100,7 +100,7 @@ public sealed class RenderPipelineCoordinatorTests
     public void BuildFrame_WorldWithSpriteAndTextSystems_ProducesBuiltInPassesInRegistryOrder()
     {
         World world = CreateStartedWorld(new SpriteRenderSystem(), new TextRenderSystem());
-        RenderView view = new(
+        TestRenderView view = new(
             "Main",
             320,
             180,
@@ -234,7 +234,7 @@ public sealed class RenderPipelineCoordinatorTests
 
     private sealed class NullViewRecordingProcessor : IRenderItemProcessor<TestRenderItem>
     {
-        public RenderView? CapturedView { get; private set; }
+        public IRenderView? CapturedView { get; private set; }
 
         public void Process(ReadOnlySpan<TestRenderItem> items, IRenderPipelineContext context)
         {
@@ -244,11 +244,30 @@ public sealed class RenderPipelineCoordinatorTests
 
     private sealed class ViewRecordingProcessor : IRenderItemProcessor<TestRenderItem>
     {
-        public RenderView? CapturedView { get; private set; }
+        public IRenderView? CapturedView { get; private set; }
 
         public void Process(ReadOnlySpan<TestRenderItem> items, IRenderPipelineContext context)
         {
             CapturedView = context.View;
         }
+    }
+
+    private sealed class TestRenderView : IRenderView
+    {
+        public TestRenderView(string name, int viewportWidth, int viewportHeight, ClearOptions clear)
+        {
+            Name = name;
+            ViewportWidth = viewportWidth;
+            ViewportHeight = viewportHeight;
+            Clear = clear;
+        }
+
+        public string Name { get; }
+
+        public int ViewportWidth { get; }
+
+        public int ViewportHeight { get; }
+
+        public ClearOptions Clear { get; }
     }
 }
