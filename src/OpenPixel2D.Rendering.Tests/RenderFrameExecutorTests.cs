@@ -12,7 +12,7 @@ public sealed class RenderFrameExecutorTests
     public void Execute_ReceivesCompletedFrameAndViewFromCoordinator()
     {
         World world = CreateStartedWorld(new SpriteRenderSystem(), new TextRenderSystem());
-        RenderView view = new(
+        TestRenderView view = new(
             "Main",
             320,
             180,
@@ -84,5 +84,24 @@ public sealed class RenderFrameExecutorTests
             Frame = frame;
             View = view;
         }
+    }
+
+    private sealed class TestRenderView : IRenderView
+    {
+        public TestRenderView(string name, int viewportWidth, int viewportHeight, ClearOptions clear)
+        {
+            Name = name;
+            ViewportWidth = viewportWidth;
+            ViewportHeight = viewportHeight;
+            Clear = clear;
+        }
+
+        public string Name { get; }
+
+        public int ViewportWidth { get; }
+
+        public int ViewportHeight { get; }
+
+        public ClearOptions Clear { get; }
     }
 }

@@ -20,7 +20,7 @@ public sealed class RenderPipelineContextTests
     {
         RenderPassRegistry registry = new();
         registry.RegisterDefaultPasses();
-        RenderView view = new(
+        TestRenderView view = new(
             "Main",
             320,
             180,
@@ -28,10 +28,29 @@ public sealed class RenderPipelineContextTests
         RenderPipelineContext context = new(new RenderFrame(registry), new RenderQueue(), view);
 
         Assert.Same(view, context.View);
-        RenderView resolvedView = Assert.IsType<RenderView>(context.View);
+        IRenderView resolvedView = Assert.IsAssignableFrom<IRenderView>(context.View);
         Assert.Equal("Main", resolvedView.Name);
         Assert.Equal(320, resolvedView.ViewportWidth);
         Assert.Equal(180, resolvedView.ViewportHeight);
         Assert.Equal(new ClearOptions(ClearColour: true, Colour: Color.CornflowerBlue), resolvedView.Clear);
+    }
+
+    private sealed class TestRenderView : IRenderView
+    {
+        public TestRenderView(string name, int viewportWidth, int viewportHeight, ClearOptions clear)
+        {
+            Name = name;
+            ViewportWidth = viewportWidth;
+            ViewportHeight = viewportHeight;
+            Clear = clear;
+        }
+
+        public string Name { get; }
+
+        public int ViewportWidth { get; }
+
+        public int ViewportHeight { get; }
+
+        public ClearOptions Clear { get; }
     }
 }

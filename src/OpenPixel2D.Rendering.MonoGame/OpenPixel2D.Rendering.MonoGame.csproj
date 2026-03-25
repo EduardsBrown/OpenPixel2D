@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OpenPixel2D.Runtime\OpenPixel2D.Runtime.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Rendering\OpenPixel2D.Rendering.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Rendering.Abstractions\OpenPixel2D.Rendering.Abstractions.csproj" />
   </ItemGroup>

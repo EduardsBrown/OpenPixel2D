@@ -4,7 +4,7 @@ namespace OpenPixel2D.Rendering;
 
 internal sealed class RenderPipelineContext : IRenderContext, IRenderPipelineContext
 {
-    public RenderPipelineContext(IRenderFrame frame, IRenderSubmissionContext submission, RenderView? view = null)
+    public RenderPipelineContext(IRenderFrame frame, IRenderSubmissionContext submission, IRenderView? view = null)
     {
         ArgumentNullException.ThrowIfNull(frame);
         ArgumentNullException.ThrowIfNull(submission);
@@ -18,9 +18,9 @@ internal sealed class RenderPipelineContext : IRenderContext, IRenderPipelineCon
 
     public IRenderSubmissionContext Submission { get; }
 
-    public RenderView? View { get; private set; }
+    public IRenderView? View { get; private set; }
 
-    internal void SetView(RenderView? view)
+    internal void SetView(IRenderView? view)
     {
         View = view;
     }

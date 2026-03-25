@@ -10,7 +10,6 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
@@ -20,9 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OpenPixel2D.Runtime\OpenPixel2D.Runtime.csproj" />
-    <ProjectReference Include="..\OpenPixel2D.Rendering.MonoGame\OpenPixel2D.Rendering.MonoGame.csproj" />
+    <ProjectReference Include="..\OpenPixel2D.Components\OpenPixel2D.Components.csproj" />
+    <ProjectReference Include="..\OpenPixel2D.Engine\OpenPixel2D.Engine.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Rendering\OpenPixel2D.Rendering.csproj" />
+    <ProjectReference Include="..\OpenPixel2D.Rendering.Abstractions\OpenPixel2D.Rendering.Abstractions.csproj" />
+    <ProjectReference Include="..\OpenPixel2D.Runtime\OpenPixel2D.Runtime.csproj" />
   </ItemGroup>
 
 </Project>

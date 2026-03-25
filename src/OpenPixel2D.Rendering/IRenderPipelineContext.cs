@@ -6,5 +6,5 @@ internal interface IRenderPipelineContext
 {
     IRenderFrame Frame { get; }
 
-    RenderView? View { get; }
+    IRenderView? View { get; }
 }
