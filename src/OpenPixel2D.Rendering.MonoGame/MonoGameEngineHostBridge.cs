@@ -4,6 +4,11 @@ using OpenPixel2D.Runtime;
 
 namespace OpenPixel2D.Rendering.MonoGame;
 
+/// <summary>
+/// MonoGame-specific loop adapter. This type converts <see cref="GameTime"/> into the backend-neutral
+/// runtime timestep model and forwards control to <see cref="IEngineHost"/> without leaking MonoGame
+/// types into core runtime abstractions.
+/// </summary>
 public sealed class MonoGameEngineHostBridge
 {
     private readonly IEngineHost _host;

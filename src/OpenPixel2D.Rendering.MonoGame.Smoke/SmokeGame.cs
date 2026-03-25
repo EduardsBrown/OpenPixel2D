@@ -86,12 +86,13 @@ internal sealed class SmokeGame : Game
         world.AddSystem(new SpriteRenderSystem());
         world.AddSystem(new TextRenderSystem());
 
-        Entity spriteEntity = new();
-        spriteEntity.AddComponent(new TransformComponent
+        TransformComponent spriteTransform = new()
         {
             Position = new NumericsVector2(56f, 64f),
             Scale = NumericsVector2.One
-        });
+        };
+        Entity spriteEntity = new();
+        spriteEntity.AddComponent(spriteTransform);
         spriteEntity.AddComponent(new SpriteComponent
         {
             Asset = new AssetId("smoke-texture"),
@@ -99,13 +100,15 @@ internal sealed class SmokeGame : Game
             Height = 96f,
             Colour = SystemDrawingColor.White
         });
+        spriteEntity.AddComponent(new SmokeMotionBehaviour(spriteTransform));
         world.AddEntity(spriteEntity);
 
-        Entity textEntity = new();
-        textEntity.AddComponent(new TransformComponent
+        TransformComponent textTransform = new()
         {
             Position = new NumericsVector2(56f, 190f)
-        });
+        };
+        Entity textEntity = new();
+        textEntity.AddComponent(textTransform);
         textEntity.AddComponent(new TextComponent
         {
             Asset = new AssetId("smoke-font"),
@@ -113,6 +116,7 @@ internal sealed class SmokeGame : Game
             Size = 4f,
             Colour = SystemDrawingColor.Gold
         });
+        textEntity.AddComponent(new SmokePulseBehaviour(textTransform));
         world.AddEntity(textEntity);
 
         return world;
@@ -203,6 +207,59 @@ internal sealed class SmokeGame : Game
     }
 
     private readonly record struct GlyphDefinition(char Character, string[] Rows);
+
+    private sealed class SmokeMotionBehaviour : BehaviorComponent
+    {
+        private readonly TransformComponent _transform;
+        private readonly NumericsVector2 _origin;
+
+        public SmokeMotionBehaviour(TransformComponent transform)
+        {
+            ArgumentNullException.ThrowIfNull(transform);
+            _transform = transform;
+            _origin = transform.Position;
+        }
+
+        public override void OnStart()
+        {
+            // Startup uses the zeroed public Time snapshot published by EngineHost before World.Start().
+            _transform.Rotation = Time.DeltaTime;
+        }
+
+        public override void Update()
+        {
+            float totalTime = (float)Time.TotalTime;
+            _transform.Position = _origin + new NumericsVector2(
+                MathF.Sin(totalTime * 2f) * 18f,
+                MathF.Cos(totalTime * 1.25f) * 6f);
+            _transform.Rotation = totalTime * 0.35f;
+        }
+    }
+
+    private sealed class SmokePulseBehaviour : BehaviorComponent
+    {
+        private readonly TransformComponent _transform;
+        private readonly NumericsVector2 _origin;
+
+        public SmokePulseBehaviour(TransformComponent transform)
+        {
+            ArgumentNullException.ThrowIfNull(transform);
+            _transform = transform;
+            _origin = transform.Position;
+        }
+
+        public override void OnStart()
+        {
+            _transform.Scale = NumericsVector2.One + new NumericsVector2((float)Time.FrameCount * 0f);
+        }
+
+        public override void Update()
+        {
+            float pulse = 1f + (MathF.Sin((float)Time.TotalTime * 3f) * 0.08f);
+            _transform.Position = _origin + new NumericsVector2(0f, MathF.Sin((float)Time.TotalTime * 2f) * 4f);
+            _transform.Scale = new NumericsVector2(pulse, pulse);
+        }
+    }
 
     private sealed class SmokeRenderView : IRenderView
     {

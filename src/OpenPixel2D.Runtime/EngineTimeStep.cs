@@ -1,5 +1,9 @@
 namespace OpenPixel2D.Runtime;
 
+/// <summary>
+/// Authoritative runtime timing snapshot supplied by the platform bridge. The runtime host uses this
+/// model internally and publishes gameplay-facing values through <see cref="OpenPixel2D.Engine.Time"/>.
+/// </summary>
 public readonly record struct EngineTimeStep
 {
     public EngineTimeStep(TimeSpan elapsedTime, TimeSpan totalTime)

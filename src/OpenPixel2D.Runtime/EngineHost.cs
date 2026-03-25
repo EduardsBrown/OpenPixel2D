@@ -4,11 +4,17 @@ using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Runtime;
 
+/// <summary>
+/// Minimal backend-neutral runtime composition root. The host owns lifecycle orchestration, publishes
+/// the engine-facing static <see cref="Time"/> facade from authoritative runtime timing, coordinates
+/// frame construction, and delegates final execution to the backend.
+/// </summary>
 public sealed class EngineHost : IEngineHost
 {
     private readonly RenderPipelineCoordinator _pipelineCoordinator;
     private readonly IRenderFrameExecutor _frameExecutor;
-    private bool _disposed;
+    private EngineHostState _state = EngineHostState.Created;
+    private ulong _updateFrameCount;
 
     public EngineHost(World world, IRenderFrameExecutor frameExecutor)
     {
@@ -28,26 +34,33 @@ public sealed class EngineHost : IEngineHost
 
     public void Initialize()
     {
-        EnsureNotDisposed(nameof(Initialize));
+        EnsureState(EngineHostState.Created, nameof(Initialize));
+
+        ResetTimingState();
         World.Initialize();
+        _state = EngineHostState.Initialized;
     }
 
     public void Start()
     {
-        EnsureNotDisposed(nameof(Start));
+        EnsureState(EngineHostState.Initialized, nameof(Start));
+        PublishStartupTime();
         World.Start();
+        _state = EngineHostState.Started;
     }
 
     public void Update(EngineTimeStep timeStep)
     {
-        EnsureNotDisposed(nameof(Update));
+        EnsureState(EngineHostState.Started, nameof(Update));
         LastUpdateTimeStep = timeStep;
+        _updateFrameCount++;
+        PublishTime(timeStep, _updateFrameCount);
         World.Update();
     }
 
     public void Render(EngineTimeStep timeStep, IRenderView? view = null)
     {
-        EnsureNotDisposed(nameof(Render));
+        EnsureState(EngineHostState.Started, nameof(Render));
         LastRenderTimeStep = timeStep;
 
         RenderFrame frame = view is null
@@ -59,7 +72,7 @@ public sealed class EngineHost : IEngineHost
 
     public void Dispose()
     {
-        if (_disposed)
+        if (_state == EngineHostState.Disposed)
         {
             throw new InvalidOperationException("Dispose can only be called once.");
         }
@@ -70,21 +83,53 @@ public sealed class EngineHost : IEngineHost
         }
         finally
         {
+            ResetTimingState();
+
             if (_frameExecutor is IDisposable disposableExecutor)
             {
                 disposableExecutor.Dispose();
             }
 
-            _disposed = true;
+            _state = EngineHostState.Disposed;
             GC.SuppressFinalize(this);
         }
     }
 
-    private void EnsureNotDisposed(string operation)
+    private void EnsureState(EngineHostState expectedState, string operation)
     {
-        if (_disposed)
+        if (_state != expectedState)
         {
-            throw new InvalidOperationException($"{operation} cannot be called after the engine host has been disposed.");
+            throw new InvalidOperationException(
+                $"{operation} can only be called when the engine host is in the {expectedState} state. Current state: {_state}.");
         }
+    }
+
+    private void ResetTimingState()
+    {
+        LastUpdateTimeStep = null;
+        LastRenderTimeStep = null;
+        _updateFrameCount = 0UL;
+        Time.Reset();
+    }
+
+    private static void PublishStartupTime()
+    {
+        Time.Reset();
+    }
+
+    private static void PublishTime(EngineTimeStep timeStep, ulong frameCount)
+    {
+        Time.Publish(
+            (float)timeStep.ElapsedTime.TotalSeconds,
+            timeStep.TotalTime.TotalSeconds,
+            frameCount);
+    }
+
+    private enum EngineHostState
+    {
+        Created,
+        Initialized,
+        Started,
+        Disposed
     }
 }
