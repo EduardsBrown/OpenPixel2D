@@ -1,4 +1,4 @@
-namespace OpenPixel2D.Content.Tests;
+namespace OpenPixel2D.Runtime.Tests;
 
 internal sealed class TemporaryDirectory : IDisposable
 {
@@ -6,7 +6,7 @@ internal sealed class TemporaryDirectory : IDisposable
     {
         RootPath = Path.Combine(
             Path.GetTempPath(),
-            "OpenPixel2D.Content.Tests",
+            "OpenPixel2D.Runtime.Tests",
             Guid.NewGuid().ToString("N"));
 
         Directory.CreateDirectory(RootPath);
@@ -19,35 +19,6 @@ internal sealed class TemporaryDirectory : IDisposable
         return Path.Combine(
             RootPath,
             relativePath.Replace('/', Path.DirectorySeparatorChar));
-    }
-
-    public string CreateFile(string relativePath, string contents = "test")
-    {
-        string fullPath = GetPath(relativePath);
-
-        string? directory = Path.GetDirectoryName(fullPath);
-
-        if (!string.IsNullOrEmpty(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        File.WriteAllText(fullPath, contents);
-        return fullPath;
-    }
-
-    public string CreateFile(string relativePath, ReadOnlySpan<byte> contents)
-    {
-        string fullPath = GetPath(relativePath);
-        string? directory = Path.GetDirectoryName(fullPath);
-
-        if (!string.IsNullOrEmpty(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        File.WriteAllBytes(fullPath, contents.ToArray());
-        return fullPath;
     }
 
     public string CopyFile(string sourcePath, string relativePath)

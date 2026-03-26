@@ -22,4 +22,10 @@
     <ProjectReference Include="..\\OpenPixel2D.Content\\OpenPixel2D.Content.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Assets\\**\\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

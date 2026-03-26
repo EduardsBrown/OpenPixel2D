@@ -35,13 +35,6 @@ public sealed class ContentRootPathResolver : IContentPathResolver
                 nameof(path));
         }
 
-        if (!File.Exists(resolvedPath))
-        {
-            throw new FileNotFoundException(
-                $"Asset '{path}' was not found under content root '{ContentRoot}'.",
-                resolvedPath);
-        }
-
         return resolvedPath;
     }
 

@@ -27,4 +27,10 @@
     <ProjectReference Include="..\OpenPixel2D.Runtime\OpenPixel2D.Runtime.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\OpenPixel2D.Content.Tests\Assets\Fonts\CascadiaMono.ttf" Link="Assets\Fonts\CascadiaMono.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

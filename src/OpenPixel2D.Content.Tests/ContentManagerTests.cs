@@ -110,6 +110,24 @@ public sealed class ContentManagerTests
     }
 
     [Fact]
+    public void Load_WithMissingFile_ThrowsFileNotFoundException()
+    {
+        using TemporaryDirectory temporaryDirectory = new();
+        AssetLoaderRegistry registry = new();
+        RecordingLoader<PrimaryAsset> loader = new(
+            canLoad: static _ => true,
+            load: static _ => new PrimaryAsset("unexpected"));
+        registry.Register(loader);
+        ContentManager manager = new(new ContentRootPathResolver(temporaryDirectory.RootPath), registry);
+
+        FileNotFoundException exception = Assert.Throws<FileNotFoundException>(
+            () => manager.Load<PrimaryAsset>(new AssetPath("missing/file.txt")));
+
+        Assert.Contains("missing/file.txt", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, loader.LoadCalls);
+    }
+
+    [Fact]
     public void TryLoad_WithUnsupportedType_ReturnsFalse()
     {
         using TemporaryDirectory temporaryDirectory = new();

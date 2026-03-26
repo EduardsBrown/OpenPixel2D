@@ -19,4 +19,13 @@
     <ProjectReference Include="..\OpenPixel2D.Rendering.Abstractions\OpenPixel2D.Rendering.Abstractions.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Assets\textures\smoke-texture.png" Link="textures\smoke-texture.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\OpenPixel2D.Content.Tests\Assets\Fonts\CascadiaMono.ttf" Link="fonts\CascadiaMono.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

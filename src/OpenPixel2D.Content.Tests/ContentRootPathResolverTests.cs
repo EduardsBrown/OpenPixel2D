@@ -32,15 +32,16 @@ public sealed class ContentRootPathResolverTests
     }
 
     [Fact]
-    public void Resolve_WithMissingFile_ThrowsFileNotFoundException()
+    public void Resolve_WithMissingFile_ReturnsCanonicalPathInsideConfiguredRoot()
     {
         using TemporaryDirectory temporaryDirectory = new();
         ContentRootPathResolver resolver = new(temporaryDirectory.RootPath);
 
-        FileNotFoundException exception = Assert.Throws<FileNotFoundException>(
-            () => resolver.Resolve(new AssetPath("missing/data.json")));
+        string resolvedPath = resolver.Resolve(new AssetPath("missing/data.json"));
 
-        Assert.Contains("missing/data.json", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(
+            Path.GetFullPath(Path.Combine(temporaryDirectory.RootPath, "missing", "data.json")),
+            resolvedPath);
     }
 
     [Fact]

@@ -20,5 +20,8 @@
 
 - Public builder/configuration APIs are still future work.
 - Camera support is still future work.
-- Asset/content loading is still future work.
+- Runtime content loading now supports common image files and `.ttf` fonts through `ContentManager`.
+- `EngineHost` can now compose a shared runtime content manager and explicit content root for rendering.
+- Default render-path asset resolution now validates authored `AssetPath` values through the content system before backend execution.
+- Backend resource creation remains backend-specific; the current MonoGame path lazily creates resources from runtime-loaded content.
 - Public processor registration is still future work.

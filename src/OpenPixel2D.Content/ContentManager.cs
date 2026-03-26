@@ -42,6 +42,7 @@ public sealed class ContentManager : IContentManager
         }
 
         string absolutePath = _pathResolver.Resolve(path);
+        EnsureFileExists(path, absolutePath);
         AssetLoadContext context = new(path, absolutePath);
 
         if (!_loaders.TryLoad(context, out T asset))
@@ -69,6 +70,7 @@ public sealed class ContentManager : IContentManager
         try
         {
             absolutePath = _pathResolver.Resolve(path);
+            EnsureFileExists(path, absolutePath);
         }
         catch (FileNotFoundException)
         {
@@ -102,6 +104,16 @@ public sealed class ContentManager : IContentManager
         if (asset is null)
         {
             throw new InvalidOperationException($"Loader returned null for asset '{path}'.");
+        }
+    }
+
+    private static void EnsureFileExists(AssetPath path, string absolutePath)
+    {
+        if (!File.Exists(absolutePath))
+        {
+            throw new FileNotFoundException(
+                $"Asset '{path}' was not found at '{absolutePath}'.",
+                absolutePath);
         }
     }
 }

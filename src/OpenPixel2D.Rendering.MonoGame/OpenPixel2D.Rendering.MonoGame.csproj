@@ -7,10 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FontStashSharp.MonoGame" Version="1.5.4" />
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OpenPixel2D.Content\OpenPixel2D.Content.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Runtime\OpenPixel2D.Runtime.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Rendering\OpenPixel2D.Rendering.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Rendering.Abstractions\OpenPixel2D.Rendering.Abstractions.csproj" />

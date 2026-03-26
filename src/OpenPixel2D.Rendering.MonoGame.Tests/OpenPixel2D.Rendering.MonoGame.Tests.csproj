@@ -20,9 +20,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OpenPixel2D.Content\OpenPixel2D.Content.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Runtime\OpenPixel2D.Runtime.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Rendering.MonoGame\OpenPixel2D.Rendering.MonoGame.csproj" />
     <ProjectReference Include="..\OpenPixel2D.Rendering\OpenPixel2D.Rendering.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\OpenPixel2D.Content.Tests\Assets\Fonts\CascadiaMono.ttf" Link="Assets\Fonts\CascadiaMono.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
