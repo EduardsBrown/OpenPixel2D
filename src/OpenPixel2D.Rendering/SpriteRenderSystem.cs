@@ -1,4 +1,5 @@
 using OpenPixel2D.Components;
+using OpenPixel2D.Content;
 using OpenPixel2D.Engine;
 using OpenPixel2D.Engine.Extensions;
 using OpenPixel2D.Rendering.Abstractions;
@@ -26,7 +27,7 @@ public sealed class SpriteRenderSystem : RenderSystem
                 continue;
             }
 
-            if (string.IsNullOrWhiteSpace(sprite.Asset.Value))
+            if (sprite.Asset.IsEmpty)
             {
                 continue;
             }

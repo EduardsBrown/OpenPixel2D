@@ -1,3 +1,4 @@
+using OpenPixel2D.Content;
 using OpenPixel2D.Engine;
 using OpenPixel2D.Rendering.Abstractions;
 
@@ -16,6 +17,13 @@ public sealed class RenderPipelineCoordinator
 
     public RenderPipelineCoordinator()
         : this(RenderPipelineDefaults.CreatePassRegistry(), RenderPipelineDefaults.CreateProcessorRegistry())
+    {
+    }
+
+    public RenderPipelineCoordinator(IContentManager content)
+        : this(
+            RenderPipelineDefaults.CreatePassRegistry(),
+            RenderPipelineDefaults.CreateProcessorRegistry(new ContentBackedRenderAssetResolver(content)))
     {
     }
 

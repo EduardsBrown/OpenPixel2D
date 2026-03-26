@@ -1,11 +1,12 @@
 using System.Drawing;
 using System.Numerics;
+using OpenPixel2D.Content;
 using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering;
 
 internal readonly record struct SpriteRenderItem(
-    AssetId Asset,
+    AssetPath Asset,
     Vector2 Position,
     Vector2 Scale,
     float Rotation,

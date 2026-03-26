@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Numerics;
+using OpenPixel2D.Content;
 using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering.Tests;
@@ -17,7 +18,7 @@ public sealed class SpriteRenderItemProcessorTests
             textureResult: new TextureId("resolved-player"),
             fontResult: default);
         queue.Submit(new SpriteRenderItem(
-            new AssetId("player"),
+            new AssetPath("player"),
             new Vector2(32f, 48f),
             new Vector2(1.5f, 2f),
             0.5f,
@@ -33,7 +34,7 @@ public sealed class SpriteRenderItemProcessorTests
         SpriteRenderCommand command = Assert.IsType<SpriteRenderCommand>(Assert.Single(pass.Commands));
 
         Assert.Equal(RenderPassNames.WorldSprites, pass.Descriptor.Name);
-        Assert.Equal([new AssetId("player")], resolver.TextureRequests);
+        Assert.Equal([new AssetPath("player")], resolver.TextureRequests);
         Assert.Empty(resolver.FontRequests);
         Assert.Equal(new TextureId("resolved-player"), command.TextureId);
         Assert.Equal(new Vector2(32f, 48f), command.Position);
@@ -55,7 +56,7 @@ public sealed class SpriteRenderItemProcessorTests
         RenderFrame frame = new(registry);
         RenderQueue queue = new();
         queue.Submit(new SpriteRenderItem(
-            new AssetId("first"),
+            new AssetPath("first"),
             new Vector2(10f, 20f),
             Vector2.One,
             0f,
@@ -63,7 +64,7 @@ public sealed class SpriteRenderItemProcessorTests
             8f,
             Color.Red));
         queue.Submit(new SpriteRenderItem(
-            new AssetId("second"),
+            new AssetPath("second"),
             new Vector2(10f, 10f),
             Vector2.One,
             0f,
@@ -71,7 +72,7 @@ public sealed class SpriteRenderItemProcessorTests
             8f,
             Color.Green));
         queue.Submit(new SpriteRenderItem(
-            new AssetId("third"),
+            new AssetPath("third"),
             new Vector2(10f, 20f),
             Vector2.One,
             0f,
@@ -118,17 +119,17 @@ public sealed class SpriteRenderItemProcessorTests
             _fontResult = fontResult;
         }
 
-        public List<AssetId> TextureRequests { get; } = [];
+        public List<AssetPath> TextureRequests { get; } = [];
 
-        public List<AssetId> FontRequests { get; } = [];
+        public List<AssetPath> FontRequests { get; } = [];
 
-        public TextureId ResolveTexture(AssetId asset)
+        public TextureId ResolveTexture(AssetPath asset)
         {
             TextureRequests.Add(asset);
             return _textureResult;
         }
 
-        public FontId ResolveFont(AssetId asset)
+        public FontId ResolveFont(AssetPath asset)
         {
             FontRequests.Add(asset);
             return _fontResult;

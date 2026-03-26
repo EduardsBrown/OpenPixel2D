@@ -1,3 +1,4 @@
+using FontStashSharp;
 using Microsoft.Xna.Framework.Graphics;
 using OpenPixel2D.Rendering.Abstractions;
 using XnaColor = Microsoft.Xna.Framework.Color;
@@ -94,8 +95,18 @@ internal sealed class MonoGameSpriteBatchAdapter : IMonoGameSpriteBatchAdapter
     {
         ArgumentNullException.ThrowIfNull(font);
 
-        MonoGameFontResource monoGameFont = font as MonoGameFontResource
-            ?? throw new InvalidOperationException("Font resource is not backed by a MonoGame SpriteFont.");
+        if (font is MonoGameRuntimeFontResource runtimeFont)
+        {
+            _spriteBatch.DrawString(
+                runtimeFont.GetFont(command.Size),
+                command.Text,
+                new XnaVector2(command.Position.X, command.Position.Y),
+                colour);
+            return;
+        }
+
+        MonoGameSpriteFontResource monoGameFont = font as MonoGameSpriteFontResource
+            ?? throw new InvalidOperationException("Font resource is not backed by a supported MonoGame font implementation.");
 
         _spriteBatch.DrawString(
             monoGameFont.Font,

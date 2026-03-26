@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Numerics;
+using OpenPixel2D.Content;
 using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering.Tests;
@@ -17,7 +18,7 @@ public sealed class TextRenderItemProcessorTests
             textureResult: default,
             fontResult: new FontId("resolved-font"));
         queue.Submit(new TextRenderItem(
-            new AssetId("ui-font"),
+            new AssetPath("ui-font"),
             "Hello",
             new Vector2(12f, 18f),
             24f,
@@ -32,7 +33,7 @@ public sealed class TextRenderItemProcessorTests
 
         Assert.Equal(RenderPassNames.UI, pass.Descriptor.Name);
         Assert.Empty(resolver.TextureRequests);
-        Assert.Equal([new AssetId("ui-font")], resolver.FontRequests);
+        Assert.Equal([new AssetPath("ui-font")], resolver.FontRequests);
         Assert.Equal(new FontId("resolved-font"), command.FontId);
         Assert.Equal("Hello", command.Text);
         Assert.Equal(new Vector2(12f, 18f), command.Position);
@@ -54,17 +55,17 @@ public sealed class TextRenderItemProcessorTests
             _fontResult = fontResult;
         }
 
-        public List<AssetId> TextureRequests { get; } = [];
+        public List<AssetPath> TextureRequests { get; } = [];
 
-        public List<AssetId> FontRequests { get; } = [];
+        public List<AssetPath> FontRequests { get; } = [];
 
-        public TextureId ResolveTexture(AssetId asset)
+        public TextureId ResolveTexture(AssetPath asset)
         {
             TextureRequests.Add(asset);
             return _textureResult;
         }
 
-        public FontId ResolveFont(AssetId asset)
+        public FontId ResolveFont(AssetPath asset)
         {
             FontRequests.Add(asset);
             return _fontResult;

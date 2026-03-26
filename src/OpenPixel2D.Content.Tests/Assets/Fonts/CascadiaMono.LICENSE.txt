@@ -1,0 +1,11 @@
+CascadiaMono.ttf test fixture
+
+Source:
+- Copied from the local Windows font installation at `C:\Windows\Fonts\CascadiaMono.ttf`
+- Upstream project: Cascadia Code / Cascadia Mono by Microsoft
+
+License:
+- SIL Open Font License 1.1 (OFL-1.1)
+
+Purpose:
+- Used only for deterministic runtime `.ttf` loader tests in `OpenPixel2D.Content.Tests`

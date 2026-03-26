@@ -1,12 +1,12 @@
 using System.Drawing;
+using OpenPixel2D.Content;
 using OpenPixel2D.Engine;
-using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering;
 
 public class SpriteComponent : Component
 {
-    public AssetId Asset { get; set; }
+    public AssetPath Asset { get; set; }
 
     public float Width { get; set; } = 1f;
 

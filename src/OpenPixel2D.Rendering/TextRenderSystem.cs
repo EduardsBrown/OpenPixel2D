@@ -1,4 +1,5 @@
 using OpenPixel2D.Components;
+using OpenPixel2D.Content;
 using OpenPixel2D.Engine;
 using OpenPixel2D.Engine.Extensions;
 using OpenPixel2D.Rendering.Abstractions;
@@ -26,7 +27,7 @@ public sealed class TextRenderSystem : RenderSystem
                 continue;
             }
 
-            if (string.IsNullOrWhiteSpace(text.Asset.Value) || string.IsNullOrEmpty(text.Text) || text.Size <= 0f)
+            if (text.Asset.IsEmpty || string.IsNullOrEmpty(text.Text) || text.Size <= 0f)
             {
                 continue;
             }

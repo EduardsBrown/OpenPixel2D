@@ -1,9 +1,11 @@
 using System.Drawing;
 using System.Numerics;
 using OpenPixel2D.Components;
+using OpenPixel2D.Content;
 using OpenPixel2D.Engine;
 using OpenPixel2D.Rendering;
 using OpenPixel2D.Rendering.Abstractions;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace OpenPixel2D.Runtime.Tests;
 
@@ -67,7 +69,8 @@ public sealed class EngineHostTests
     {
         World world = CreateRenderableWorld();
         RecordingFrameExecutor executor = new();
-        EngineHost host = new(world, executor);
+        RecordingContentManager content = new();
+        EngineHost host = new(world, executor, content);
         EngineTimeStep timeStep = new(TimeSpan.FromMilliseconds(16), TimeSpan.FromSeconds(1));
         TestRenderView view = new(
             "Main",
@@ -83,6 +86,7 @@ public sealed class EngineHostTests
         Assert.Equal(timeStep, host.LastRenderTimeStep);
         Assert.NotNull(executor.Frame);
         Assert.Same(view, executor.View);
+        Assert.Equal(["RuntimeImageAsset:textures/player.png", "RuntimeFontAsset:fonts/ui.ttf"], content.LoadCalls);
         Assert.Equal(
             [RenderPassNames.WorldSprites, RenderPassNames.UI],
             executor.Frame!.GetPopulatedPasses().Select(static pass => pass.Descriptor.Name).ToArray());
@@ -143,7 +147,7 @@ public sealed class EngineHostTests
     public void UpdateAndRender_RecordMostRecentTimeSteps()
     {
         World world = CreateRenderableWorld();
-        EngineHost host = new(world, new RecordingFrameExecutor());
+        EngineHost host = new(world, new RecordingFrameExecutor(), new RecordingContentManager());
         EngineTimeStep firstUpdate = new(TimeSpan.FromMilliseconds(16), TimeSpan.FromSeconds(1));
         EngineTimeStep secondUpdate = new(TimeSpan.FromMilliseconds(17), TimeSpan.FromSeconds(2));
         EngineTimeStep firstRender = new(TimeSpan.FromMilliseconds(18), TimeSpan.FromSeconds(3));
@@ -161,6 +165,46 @@ public sealed class EngineHostTests
         Assert.Equal(secondRender, host.LastRenderTimeStep);
     }
 
+    [Fact]
+    public void Render_WithConfiguredContentRoot_ResolvesAssetsRelativeToThatRoot()
+    {
+        using TemporaryDirectory temporaryDirectory = new();
+        CreatePng(temporaryDirectory.GetPath("textures/player.png"));
+        temporaryDirectory.CopyFile(TestAssetPaths.GetPath("Fonts/CascadiaMono.ttf"), "fonts/ui.ttf");
+
+        World world = CreateRenderableWorld();
+        RecordingFrameExecutor executor = new();
+        EngineHost host = new(world, executor, temporaryDirectory.RootPath);
+        EngineTimeStep timeStep = new(TimeSpan.FromMilliseconds(16), TimeSpan.FromSeconds(1));
+
+        host.Initialize();
+        host.Start();
+
+        host.Render(timeStep);
+
+        Assert.NotNull(executor.Frame);
+        Assert.Equal(
+            [RenderPassNames.WorldSprites, RenderPassNames.UI],
+            executor.Frame!.GetPopulatedPasses().Select(static pass => pass.Descriptor.Name).ToArray());
+    }
+
+    [Fact]
+    public void Render_WithSharedContentManager_UsesSuppliedContentManager()
+    {
+        World world = CreateRenderableWorld();
+        RecordingFrameExecutor executor = new();
+        RecordingContentManager content = new();
+        EngineHost host = new(world, executor, content);
+        EngineTimeStep timeStep = new(TimeSpan.FromMilliseconds(16), TimeSpan.FromSeconds(1));
+
+        host.Initialize();
+        host.Start();
+
+        host.Render(timeStep);
+
+        Assert.Equal(["RuntimeImageAsset:textures/player.png", "RuntimeFontAsset:fonts/ui.ttf"], content.LoadCalls);
+    }
+
     private static World CreateRenderableWorld()
     {
         World world = new();
@@ -175,7 +219,7 @@ public sealed class EngineHostTests
         });
         spriteEntity.AddComponent(new SpriteComponent
         {
-            Asset = new AssetId("player"),
+            Asset = new AssetPath("textures/player.png"),
             Width = 16f,
             Height = 16f,
             Colour = Color.Crimson
@@ -189,7 +233,7 @@ public sealed class EngineHostTests
         });
         textEntity.AddComponent(new TextComponent
         {
-            Asset = new AssetId("ui-font"),
+            Asset = new AssetPath("fonts/ui.ttf"),
             Text = "Ready",
             Size = 12f,
             Colour = Color.Gold
@@ -219,6 +263,46 @@ public sealed class EngineHostTests
         }
     }
 
+    private sealed class RecordingContentManager : IContentManager
+    {
+        public List<string> LoadCalls { get; } = [];
+
+        public T Load<T>(AssetPath path)
+        {
+            LoadCalls.Add($"{typeof(T).Name}:{path}");
+
+            if (typeof(T) == typeof(RuntimeImageAsset))
+            {
+                return (T)(object)new RuntimeImageAsset(1, 1, RuntimeImagePixelFormat.Rgba32, [255, 255, 255, 255]);
+            }
+
+            if (typeof(T) == typeof(RuntimeFontAsset))
+            {
+                return (T)(object)new RuntimeFontAsset(
+                    RuntimeFontFormat.TrueType,
+                    new RuntimeFontFaceMetadata(
+                        "Test Family",
+                        "Test Font",
+                        "Regular",
+                        RuntimeFontStyle.Regular,
+                        2048,
+                        1900,
+                        -500,
+                        0,
+                        2400),
+                    [1, 2, 3, 4]);
+            }
+
+            throw new InvalidOperationException($"Unexpected asset type '{typeof(T).FullName}'.");
+        }
+
+        public bool TryLoad<T>(AssetPath path, out T asset)
+        {
+            asset = Load<T>(path);
+            return true;
+        }
+    }
+
     private sealed class TestRenderView : IRenderView
     {
         public TestRenderView(string name, int viewportWidth, int viewportHeight, ClearOptions clear)
@@ -236,6 +320,16 @@ public sealed class EngineHostTests
         public int ViewportHeight { get; }
 
         public ClearOptions Clear { get; }
+    }
+
+    private static void CreatePng(string path)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+        using SixLabors.ImageSharp.Image<Rgba32> image = new(1, 1);
+        image[0, 0] = new Rgba32(255, 255, 255, 255);
+        using FileStream stream = File.Create(path);
+        image.Save(stream, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
     }
 
     private sealed class SpyBehaviorComponent : BehaviorComponent

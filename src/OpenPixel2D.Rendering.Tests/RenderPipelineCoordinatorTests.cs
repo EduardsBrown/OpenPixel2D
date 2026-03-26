@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Numerics;
 using OpenPixel2D.Components;
+using OpenPixel2D.Content;
 using OpenPixel2D.Engine;
 using OpenPixel2D.Rendering.Abstractions;
 
@@ -74,7 +75,7 @@ public sealed class RenderPipelineCoordinatorTests
         };
         SpriteComponent sprite = new()
         {
-            Asset = new AssetId("player"),
+            Asset = new AssetPath("player"),
             Width = 16f,
             Height = 16f
         };
@@ -115,7 +116,7 @@ public sealed class RenderPipelineCoordinatorTests
         });
         spriteEntity.AddComponent(new SpriteComponent
         {
-            Asset = new AssetId("player"),
+            Asset = new AssetPath("player"),
             Width = 16f,
             Height = 24f,
             Colour = Color.Crimson
@@ -129,7 +130,7 @@ public sealed class RenderPipelineCoordinatorTests
         });
         textEntity.AddComponent(new TextComponent
         {
-            Asset = new AssetId("ui-font"),
+            Asset = new AssetPath("ui-font"),
             Text = "Hello",
             Size = 18f,
             Colour = Color.Gold
@@ -183,6 +184,54 @@ public sealed class RenderPipelineCoordinatorTests
         Assert.Equal(18f, textReadModel.Size);
         Assert.Equal(Color.Gold, textReadModel.Colour);
         Assert.Equal(new ClearOptions(ClearColour: true, Colour: Color.CornflowerBlue), view.Clear);
+    }
+
+    [Fact]
+    public void BuildFrame_WithContentManager_LoadsRuntimeAssetsAndEmitsNormalizedBackendIds()
+    {
+        World world = CreateStartedWorld(new SpriteRenderSystem(), new TextRenderSystem());
+
+        Entity spriteEntity = new();
+        spriteEntity.AddComponent(new TransformComponent
+        {
+            Position = new Vector2(32f, 48f),
+            Scale = Vector2.One
+        });
+        spriteEntity.AddComponent(new SpriteComponent
+        {
+            Asset = new AssetPath("textures\\player.png"),
+            Width = 16f,
+            Height = 16f
+        });
+        world.AddEntity(spriteEntity);
+
+        Entity textEntity = new();
+        textEntity.AddComponent(new TransformComponent
+        {
+            Position = new Vector2(5f, 6f)
+        });
+        textEntity.AddComponent(new TextComponent
+        {
+            Asset = new AssetPath("fonts\\ui.ttf"),
+            Text = "Ready",
+            Size = 12f
+        });
+        world.AddEntity(textEntity);
+
+        world.Update();
+
+        RecordingContentManager content = new();
+        RenderPipelineCoordinator coordinator = new(content);
+
+        RenderFrame frame = coordinator.BuildFrame(world);
+        RenderPassBuffer[] passes = frame.GetPopulatedPasses().ToArray();
+
+        SpriteRenderCommand spriteCommand = Assert.IsType<SpriteRenderCommand>(Assert.Single(passes[0].Commands));
+        TextRenderCommand textCommand = Assert.IsType<TextRenderCommand>(Assert.Single(passes[1].Commands));
+
+        Assert.Equal(["RuntimeImageAsset:textures/player.png", "RuntimeFontAsset:fonts/ui.ttf"], content.LoadCalls);
+        Assert.Equal(new TextureId("textures/player.png"), spriteCommand.TextureId);
+        Assert.Equal(new FontId("fonts/ui.ttf"), textCommand.FontId);
     }
 
     private static World CreateStartedWorld(params RenderSystem[] systems)
@@ -269,5 +318,45 @@ public sealed class RenderPipelineCoordinatorTests
         public int ViewportHeight { get; }
 
         public ClearOptions Clear { get; }
+    }
+
+    private sealed class RecordingContentManager : IContentManager
+    {
+        public List<string> LoadCalls { get; } = [];
+
+        public T Load<T>(AssetPath path)
+        {
+            LoadCalls.Add($"{typeof(T).Name}:{path}");
+
+            if (typeof(T) == typeof(RuntimeImageAsset))
+            {
+                return (T)(object)new RuntimeImageAsset(1, 1, RuntimeImagePixelFormat.Rgba32, [255, 255, 255, 255]);
+            }
+
+            if (typeof(T) == typeof(RuntimeFontAsset))
+            {
+                return (T)(object)new RuntimeFontAsset(
+                    RuntimeFontFormat.TrueType,
+                    new RuntimeFontFaceMetadata(
+                        "Test Family",
+                        "Test Font",
+                        "Regular",
+                        RuntimeFontStyle.Regular,
+                        2048,
+                        1900,
+                        -500,
+                        0,
+                        2400),
+                    [1, 2, 3, 4]);
+            }
+
+            throw new InvalidOperationException($"Unexpected asset type '{typeof(T).FullName}'.");
+        }
+
+        public bool TryLoad<T>(AssetPath path, out T asset)
+        {
+            asset = Load<T>(path);
+            return true;
+        }
     }
 }

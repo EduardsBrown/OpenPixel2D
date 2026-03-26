@@ -1,20 +1,21 @@
+using OpenPixel2D.Content;
 using OpenPixel2D.Rendering.Abstractions;
 
 namespace OpenPixel2D.Rendering;
 
 internal sealed class PassthroughRenderAssetResolver : IRenderAssetResolver
 {
-    public TextureId ResolveTexture(AssetId asset)
+    public TextureId ResolveTexture(AssetPath asset)
     {
-        return string.IsNullOrWhiteSpace(asset.Value)
+        return asset.IsEmpty
             ? default
-            : new TextureId(asset.Value);
+            : new TextureId(asset.ToString());
     }
 
-    public FontId ResolveFont(AssetId asset)
+    public FontId ResolveFont(AssetPath asset)
     {
-        return string.IsNullOrWhiteSpace(asset.Value)
+        return asset.IsEmpty
             ? default
-            : new FontId(asset.Value);
+            : new FontId(asset.ToString());
     }
 }

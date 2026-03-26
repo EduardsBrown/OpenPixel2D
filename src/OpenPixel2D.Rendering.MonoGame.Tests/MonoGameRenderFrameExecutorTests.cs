@@ -1,7 +1,13 @@
 using System.Drawing;
 using System.Numerics;
+using OpenPixel2D.Components;
+using OpenPixel2D.Content;
+using OpenPixel2D.Engine;
+using OpenPixel2D.Rendering;
 using OpenPixel2D.Rendering.Abstractions;
+using OpenPixel2D.Runtime;
 using RenderClearOptions = OpenPixel2D.Rendering.Abstractions.ClearOptions;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace OpenPixel2D.Rendering.MonoGame.Tests;
 
@@ -465,10 +471,42 @@ public sealed class MonoGameRenderFrameExecutorTests
         Assert.Equal(["Clear", "Begin", "DrawSprite:player", "End"], events);
     }
 
+    [Fact]
+    public void Execute_WithEngineHostAndContentBackedCache_LoadsAssetsAndDrawsResolvedCommands()
+    {
+        using TemporaryDirectory temporaryDirectory = new();
+        CreatePng(temporaryDirectory.GetPath("textures/player.png"));
+        temporaryDirectory.CopyFile(TestAssetPaths.GetPath("Fonts/CascadiaMono.ttf"), "fonts/ui.ttf");
+
+        List<string> events = [];
+        RecordingGraphicsDeviceAdapter graphicsDevice = new(events);
+        RecordingSpriteBatchAdapter spriteBatch = new(events);
+        ContentManager content = new(temporaryDirectory.RootPath);
+        RecordingTextureFactory textureFactory = new("content-texture");
+        RecordingFontFactory fontFactory = new("content-font");
+        MonoGameResourceCache cache = new(content, textureFactory, fontFactory);
+        IRenderFrameExecutor executor = CreateExecutor(graphicsDevice, spriteBatch, cache);
+        EngineHost host = new(CreateRenderableWorld(), executor, content);
+        EngineTimeStep timeStep = new(TimeSpan.FromMilliseconds(16), TimeSpan.FromSeconds(1));
+
+        host.Initialize();
+        host.Start();
+
+        host.Render(timeStep);
+
+        SpriteDrawCall spriteDraw = Assert.Single(spriteBatch.SpriteDrawCalls);
+        TextDrawCall textDraw = Assert.Single(spriteBatch.TextDrawCalls);
+        Assert.Equal(new TextureId("textures/player.png"), spriteDraw.Command.TextureId);
+        Assert.Equal(new FontId("fonts/ui.ttf"), textDraw.Command.FontId);
+        Assert.Equal(1, textureFactory.CreateCalls);
+        Assert.Equal(1, fontFactory.CreateCalls);
+        Assert.Equal(["Begin", "DrawSprite:content-texture", "End", "Begin", "DrawText:content-font", "End"], events);
+    }
+
     private static MonoGameRenderFrameExecutor CreateExecutor(
         RecordingGraphicsDeviceAdapter graphicsDevice,
         RecordingSpriteBatchAdapter spriteBatch,
-        MonoGameResourceCache cache)
+        IMonoGameResourceLookup cache)
     {
         return new MonoGameRenderFrameExecutor(graphicsDevice, spriteBatch, new MonoGameRenderStateMapper(), cache);
     }
@@ -679,6 +717,42 @@ public sealed class MonoGameRenderFrameExecutorTests
         public string Name { get; }
     }
 
+    private sealed class RecordingTextureFactory : IMonoGameTextureResourceFactory
+    {
+        private readonly string _name;
+
+        public RecordingTextureFactory(string name)
+        {
+            _name = name;
+        }
+
+        public int CreateCalls { get; private set; }
+
+        public IMonoGameTextureResource Create(RuntimeImageAsset asset)
+        {
+            CreateCalls++;
+            return new FakeTextureResource(_name, asset.Width, asset.Height);
+        }
+    }
+
+    private sealed class RecordingFontFactory : IMonoGameFontResourceFactory
+    {
+        private readonly string _name;
+
+        public RecordingFontFactory(string name)
+        {
+            _name = name;
+        }
+
+        public int CreateCalls { get; private set; }
+
+        public IMonoGameFontResource Create(RuntimeFontAsset asset)
+        {
+            CreateCalls++;
+            return new FakeFontResource(_name);
+        }
+    }
+
     private readonly record struct ClearCall(
         Microsoft.Xna.Framework.Graphics.ClearOptions Options,
         Microsoft.Xna.Framework.Color Colour,
@@ -694,4 +768,52 @@ public sealed class MonoGameRenderFrameExecutorTests
         FakeFontResource Font,
         ITextRenderCommand Command,
         Microsoft.Xna.Framework.Color Colour);
+
+    private static World CreateRenderableWorld()
+    {
+        World world = new();
+        world.AddSystem(new SpriteRenderSystem());
+        world.AddSystem(new TextRenderSystem());
+
+        Entity spriteEntity = new();
+        spriteEntity.AddComponent(new TransformComponent
+        {
+            Position = new Vector2(32f, 48f),
+            Scale = Vector2.One
+        });
+        spriteEntity.AddComponent(new SpriteComponent
+        {
+            Asset = new AssetPath("textures/player.png"),
+            Width = 16f,
+            Height = 16f,
+            Colour = Color.White
+        });
+        world.AddEntity(spriteEntity);
+
+        Entity textEntity = new();
+        textEntity.AddComponent(new TransformComponent
+        {
+            Position = new Vector2(5f, 6f)
+        });
+        textEntity.AddComponent(new TextComponent
+        {
+            Asset = new AssetPath("fonts/ui.ttf"),
+            Text = "Ready",
+            Size = 12f,
+            Colour = Color.Gold
+        });
+        world.AddEntity(textEntity);
+
+        return world;
+    }
+
+    private static void CreatePng(string path)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+        using SixLabors.ImageSharp.Image<Rgba32> image = new(1, 1);
+        image[0, 0] = new Rgba32(255, 255, 255, 255);
+        using FileStream stream = File.Create(path);
+        image.Save(stream, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
+    }
 }

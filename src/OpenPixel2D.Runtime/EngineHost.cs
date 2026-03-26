@@ -1,4 +1,5 @@
 using OpenPixel2D.Engine;
+using OpenPixel2D.Content;
 using OpenPixel2D.Rendering;
 using OpenPixel2D.Rendering.Abstractions;
 
@@ -17,13 +18,24 @@ public sealed class EngineHost : IEngineHost
     private ulong _updateFrameCount;
 
     public EngineHost(World world, IRenderFrameExecutor frameExecutor)
+        : this(world, frameExecutor, new ContentManager())
+    {
+    }
+
+    public EngineHost(World world, IRenderFrameExecutor frameExecutor, string contentRoot)
+        : this(world, frameExecutor, new ContentManager(contentRoot))
+    {
+    }
+
+    public EngineHost(World world, IRenderFrameExecutor frameExecutor, IContentManager content)
     {
         ArgumentNullException.ThrowIfNull(world);
         ArgumentNullException.ThrowIfNull(frameExecutor);
+        ArgumentNullException.ThrowIfNull(content);
 
         World = world;
         _frameExecutor = frameExecutor;
-        _pipelineCoordinator = new RenderPipelineCoordinator();
+        _pipelineCoordinator = new RenderPipelineCoordinator(content);
     }
 
     public World World { get; }

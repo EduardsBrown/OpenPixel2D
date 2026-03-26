@@ -7,7 +7,7 @@
 - `MonoGameEngineHostBridge` adapts MonoGame `GameTime` and loop callbacks into the backend-neutral runtime host.
 - `MonoGameRenderFrameExecutor` executes completed passes in deterministic order.
 - `MonoGameRenderStateMapper` keeps all MonoGame state mapping local to the backend.
-- `MonoGameResourceCache` owns temporary manual registration for `Texture2D` and `SpriteFont`.
+- `MonoGameResourceCache` resolves backend ids to MonoGame resources, including lazy creation from runtime-loaded content assets.
 - `OpenPixel2D.Rendering.MonoGame.Smoke` is the minimal real-backend harness used to validate the host-driven runtime path.
 
 ## Runtime Flow
@@ -21,14 +21,16 @@
 ## Current Support
 
 - Sprite commands execute through `SpriteBatch.Draw`.
-- Text commands execute through `SpriteBatch.DrawString`.
+- Text commands execute through `SpriteBatch.DrawString`, including a runtime TTF-backed path via `FontStashSharp.MonoGame`.
 - Mixed sprite/text content inside a pass executes in original command order within a single `SpriteBatch.Begin` / `End`.
 - View clears and pass clears execute through `GraphicsDevice.Clear`.
 - The smoke harness runs through the real runtime host path and exercises runtime-driven public time updates.
+- Content-backed render resolution validates `AssetPath` values through `ContentManager` before the backend creates resources.
 
 ## Current Limitations
 
-- Manual texture/font registration is temporary until real asset loading is added.
+- `RuntimeFontAsset` is still a parsed source asset plus direct design-unit metadata, not a backend-neutral render-ready font pipeline.
+- The MonoGame text bridge is intentionally first-version only: runtime `.ttf` loading works, but public font fallback management, shaping, HarfBuzz integration, and non-`.ttf` formats remain future work.
 - Render targets are not supported yet; passes targeting offscreen render targets throw.
 - Command-level `Metadata.StateOverride` is not supported yet; the backend throws instead of partially applying overrides.
 - Unsupported command types throw instead of being ignored.
@@ -43,4 +45,4 @@ Run the backend-focused smoke app with:
 dotnet run --project src/OpenPixel2D.Rendering.MonoGame.Smoke/OpenPixel2D.Rendering.MonoGame.Smoke.csproj
 ```
 
-The harness creates a real `GraphicsDevice`, generates a texture and a simple `SpriteFont`, registers both through `MonoGameResourceCache`, builds a tiny world, drives it through `EngineHost` plus `MonoGameEngineHostBridge`, and executes the resulting frames through `MonoGameRenderFrameExecutor`.
+The harness creates a real `GraphicsDevice`, points `EngineHost` and `MonoGameResourceCache` at the output-directory content root, loads a runtime image plus `.ttf` font by `AssetPath`, and executes the resulting frames through `MonoGameRenderFrameExecutor`.
